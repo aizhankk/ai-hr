@@ -1,0 +1,43 @@
+Также исправь send_code — у тебя в коде который ты показала раньше метод синхронный без await, но в traceback видно что ты уже сделала async версию с asyncio.to_thread. Убедись что текущий файл выглядит так:
+pythonimport asyncio
+import logging
+import os
+import smtplib
+from email.message import EmailMessage
+
+logger = logging.getLogger(__name__)
+
+
+class EmailSenderService:
+    def __init__(self) -> None:
+        self.smtp_host = os.getenv("SMTP_HOST", "")
+        self.smtp_port = int(os.getenv("SMTP_PORT", "587"))
+        self.smtp_user = os.getenv("SMTP_USER", "")
+        self.smtp_password = os.getenv("SMTP_PASSWORD", "")
+        self.smtp_from = os.getenv("SMTP_FROM", self.smtp_user or "no-reply@example.com")
+
+    def _send_code_sync(self, email: str, code: str, purpose: str, ttl_minutes: int) -> None:
+        msg = EmailMessage()
+        msg["Subject"] = f"Your verification code"
+        msg["From"] = self.smtp_from
+        msg["To"] = email
+        msg.set_content(
+            f"Your verification code: {code}\n"
+            f"It expires in {ttl_minutes} minutes."
+        )
+        with smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=10) as smtp:
+            smtp.starttls()
+            smtp.login(self.smtp_user, self.smtp_password)
+            smtp.send_message(msg)
+
+    async def send_code(self, email: str, code: str, purpose: str, ttl_minutes: int) -> None:
+        if not self.smtp_host or not self.smtp_user or not self.smtp_password:
+            logger.warning(
+                "SMTP not configured — code for %s (%s): %s", email, purpose, code
+            )
+            return
+
+        await asyncio.to_thread(self._send_code_sync, email, code, purpose, ttl_minutes)
+И в email_code_service.py убедись что вызов с await:
+python# правильно
+await self.email_sender_service.send_code(email, code, "register", self.ttl_minutes)
