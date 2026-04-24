@@ -4,24 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d7857338-a239-49d2-aa1d-ce1b99b742a7" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/dataSources.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/app/modules/auth/presentation/api/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/app/modules/auth/presentation/api/auth_controller.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/app/modules/auth/presentation/schemas/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/app/modules/auth/presentation/schemas/requests/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/app/modules/auth/presentation/schemas/responses/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/app/modules/auth/services/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/config/.env" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/PythonProject.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/PythonProject.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/middlewares/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/exceptions.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/middlewares/auth_middleware.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/modules/auth/presentation/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/app/presentation/main_controller.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/presentation/main_controller.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/config/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/config/config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/db/database.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/db/database.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/main.py" afterDir="false" />
-    </list>
+    <list default="true" id="d7857338-a239-49d2-aa1d-ce1b99b742a7" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -170,7 +153,7 @@
       <workItem from="1776239227484" duration="1595000" />
       <workItem from="1776244716464" duration="7643000" />
       <workItem from="1776600944148" duration="26586000" />
-      <workItem from="1777023701094" duration="3044000" />
+      <workItem from="1777023701094" duration="3474000" />
     </task>
     <task id="LOCAL-00001" summary="1">
       <option name="closed" value="true" />
