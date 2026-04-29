@@ -7,3 +7,4 @@ backend/config/.env
 *.pdf
 *.mp4
 *.webm
+node_modules/
