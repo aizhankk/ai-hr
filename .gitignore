@@ -4,3 +4,6 @@
 **/.env.*
 !.env.example
 backend/config/.env
+*.pdf
+*.mp4
+*.webm
