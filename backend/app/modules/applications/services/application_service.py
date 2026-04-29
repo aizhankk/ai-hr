@@ -190,6 +190,16 @@ class ApplicationService:
                 candidate_id,
             )
             resumes = await conn.fetch(
+                """
+                SELECT id, original_filename, file_path, file_url, is_primary, uploaded_at
+                FROM resumes
+                WHERE candidate_id = $1::uuid
+                   OR id = $2::uuid
+                ORDER BY is_primary DESC, uploaded_at DESC
+                """,
+                candidate_id,
+                app["resume_id"],
+            ) if app["resume_id"] else await conn.fetch(
                 "SELECT id, original_filename, file_path, file_url, is_primary, uploaded_at FROM resumes WHERE candidate_id = $1::uuid ORDER BY is_primary DESC, uploaded_at DESC",
                 candidate_id,
             )
