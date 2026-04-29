@@ -80,6 +80,7 @@ async def init_db_pool():
             max_size=int(MAX_POOL_SIZE),
             max_inactive_connection_lifetime=300,
             command_timeout=30,
+            ssl="require",
             server_settings={
                 "timezone": "Asia/Almaty",
                 "application_name": "my-alatau",
