@@ -1,10 +1,39 @@
+# Env files
 .env
 **/.env
 .env.*
 **/.env.*
 !.env.example
 backend/config/.env
+
+# Uploaded media (resumes, videos)
 *.pdf
+*.doc
+*.docx
 *.mp4
 *.webm
+*.mov
+media/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Next.js
+frontend/.next/
+frontend/out/
+
+# Node
 node_modules/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
