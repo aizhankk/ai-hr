@@ -7,7 +7,6 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.exceptions import EDSServiceException
 from db import database
-
 logger = logging.getLogger(__name__)
 
 EXCLUDE_PATHS = {"/", "/docs", "/openapi.json", "/redoc", "/health"}
@@ -48,9 +47,10 @@ def _unauthorized_response(exc: EDSServiceException) -> JSONResponse:
 
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        # Keep the field for dependencies that expect it.
+        # Keep the fields for dependencies that expect them.
         request.state.db = None
         request.state.user_id = None
+        request.state.user_role = None
 
         path = request.url.path.rstrip("/") or "/"
         if (
@@ -106,12 +106,16 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         async with pool.acquire() as conn:
             row = await conn.fetchrow(
-                "SELECT user_id FROM aihr.user_sessions "
-                "WHERE session_token = $1 "
-                "  AND is_active = TRUE "
-                "  AND revoked_at IS NULL "
-                "  AND expires_at > NOW() "
-                "LIMIT 1",
+                """
+                SELECT us.user_id, u.role
+                FROM aihr.user_sessions us
+                JOIN aihr.users u ON u.id = us.user_id
+                WHERE us.session_token = $1
+                  AND us.is_active = TRUE
+                  AND us.revoked_at IS NULL
+                  AND us.expires_at > NOW()
+                LIMIT 1
+                """,
                 token,
             )
             if not row:
@@ -131,5 +135,6 @@ class AuthMiddleware(BaseHTTPMiddleware):
             )
             request.state.db = conn
             request.state.user_id = user_id
+            request.state.user_role = str(row["role"])
             _log("info", "auth_ok", request, user_id=user_id)
             return await call_next(request)

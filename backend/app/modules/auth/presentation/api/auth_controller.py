@@ -12,6 +12,18 @@ from app.modules.auth.presentation.schemas.requests import (
     ResendCodeRequest,
     VerifyEmailRequest,
 )
+from pydantic import BaseModel
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+class ChangeEmailRequestBody(BaseModel):
+    new_email: str
+
+class ChangeEmailConfirmBody(BaseModel):
+    new_email: str
+    code: str
 from app.modules.auth.services.auth_service import AuthService
 
 auth_router = APIRouter(prefix="/auth", tags=["Auth"])
@@ -92,7 +104,10 @@ async def resend_code(payload: ResendCodeRequest):
 
 @auth_router.post("/login")
 async def login_user(payload: LoginRequest):
-    token_pair = await auth_service.login(payload.email, payload.password)
+    try:
+        token_pair = await auth_service.login(payload.email, payload.password)
+    except EDSServiceException as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=exc.message_en)
     return {
         "status": "success",
         "code": "LOGIN_OK",
@@ -108,7 +123,10 @@ async def login_user(payload: LoginRequest):
 
 @auth_router.post("/refresh")
 async def refresh_tokens(payload: RefreshRequest):
-    token_pair = await auth_service.refresh(payload.refresh_token)
+    try:
+        token_pair = await auth_service.refresh(payload.refresh_token)
+    except EDSServiceException as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=exc.message_en)
     return {
         "status": "success",
         "code": "REFRESH_OK",
@@ -124,7 +142,10 @@ async def refresh_tokens(payload: RefreshRequest):
 
 @auth_router.post("/forgot-password/request-code")
 async def forgot_password_request_code(payload: ForgotPasswordCodeRequest):
-    await auth_service.request_forgot_code(payload.email)
+    try:
+        await auth_service.request_forgot_code(payload.email)
+    except EDSServiceException as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=exc.message_en)
     return {
         "status": "success",
         "code": "FORGOT_PASSWORD_CODE_SENT",
@@ -176,6 +197,59 @@ async def get_users(_: HTTPAuthorizationCredentials = Security(bearer_scheme)):
         "message": "Users list",
         "data": users,
     }
+
+
+@auth_router.post("/change-email/request", status_code=status.HTTP_200_OK)
+async def change_email_request(
+    payload: ChangeEmailRequestBody,
+    request: Request,
+    _: HTTPAuthorizationCredentials = Security(bearer_scheme),
+):
+    try:
+        await auth_service.request_email_change(request.state.user_id, payload.new_email)
+    except EDSServiceException as exc:
+        http_status = status.HTTP_409_CONFLICT if exc.code == "EMAIL_ALREADY_EXISTS" else status.HTTP_400_BAD_REQUEST
+        raise HTTPException(status_code=http_status, detail=exc.message_en)
+    return {"status": "success", "code": "EMAIL_CHANGE_CODE_SENT", "message": "Verification code sent to new email"}
+
+
+@auth_router.post("/change-email/confirm", status_code=status.HTTP_200_OK)
+async def change_email_confirm(
+    payload: ChangeEmailConfirmBody,
+    request: Request,
+    _: HTTPAuthorizationCredentials = Security(bearer_scheme),
+):
+    try:
+        await auth_service.confirm_email_change(request.state.user_id, payload.new_email, payload.code)
+    except EDSServiceException as exc:
+        code = exc.code
+        http_status = (
+            status.HTTP_410_GONE if code == "CODE_EXPIRED"
+            else status.HTTP_400_BAD_REQUEST
+        )
+        raise HTTPException(status_code=http_status, detail=exc.message_en)
+    return {"status": "success", "code": "EMAIL_CHANGED", "message": "Email updated. Please log in again."}
+
+
+@auth_router.post("/change-password", status_code=status.HTTP_200_OK)
+async def change_password(
+    payload: ChangePasswordRequest,
+    request: Request,
+    _: HTTPAuthorizationCredentials = Security(bearer_scheme),
+):
+    if len(payload.new_password) < 6:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New password must be at least 6 characters")
+    try:
+        await auth_service.change_password(
+            request.state.user_id,
+            payload.current_password,
+            payload.new_password,
+        )
+    except EDSServiceException as exc:
+        code = exc.code
+        http_status = status.HTTP_400_BAD_REQUEST if code == "INVALID_CURRENT_PASSWORD" else status.HTTP_404_NOT_FOUND
+        raise HTTPException(status_code=http_status, detail=exc.message_en)
+    return {"status": "success", "code": "PASSWORD_CHANGED", "message": "Password changed successfully"}
 
 
 @auth_router.post("/logout")

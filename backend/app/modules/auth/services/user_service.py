@@ -220,6 +220,55 @@ class UserService:
                 )
             return row
 
+    async def update_email(self, user_id: str, new_email: str) -> None:
+        if database.db_pool is None:
+            raise EDSServiceException(
+                code="DB_UNAVAILABLE",
+                message_ru="База данных недоступна",
+                message_kz="Дерекқор қолжетімсіз",
+                message_en="Database unavailable",
+            )
+        async with database.db_pool.acquire() as conn:
+            await conn.execute(
+                "UPDATE aihr.users SET email = $1, updated_at = NOW() WHERE id = $2::uuid",
+                new_email,
+                user_id,
+            )
+
+    async def change_password(self, user_id: str, current_password: str, new_password: str) -> None:
+        if database.db_pool is None:
+            raise EDSServiceException(
+                code="DB_UNAVAILABLE",
+                message_ru="База данных недоступна",
+                message_kz="Дерекқор қолжетімсіз",
+                message_en="Database unavailable",
+            )
+        async with database.db_pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT password_hash FROM aihr.users WHERE id = $1::uuid AND is_active = TRUE",
+                user_id,
+            )
+            if not row:
+                raise EDSServiceException(
+                    code="USER_NOT_FOUND",
+                    message_ru="Пользователь не найден",
+                    message_kz="Пайдаланушы табылмады",
+                    message_en="User not found",
+                )
+            if not self.password_service.verify_password(current_password, row["password_hash"]):
+                raise EDSServiceException(
+                    code="INVALID_CURRENT_PASSWORD",
+                    message_ru="Неверный текущий пароль",
+                    message_kz="Ағымдағы құпиясөз қате",
+                    message_en="Current password is incorrect",
+                )
+            new_hash = self.password_service.hash_password(new_password)
+            await conn.execute(
+                "UPDATE aihr.users SET password_hash = $1, updated_at = NOW() WHERE id = $2::uuid",
+                new_hash,
+                user_id,
+            )
+
     async def reset_password(self, email: str, new_password: str) -> None:
         if database.db_pool is None:
             raise EDSServiceException(

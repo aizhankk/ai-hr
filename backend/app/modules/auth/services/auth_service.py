@@ -102,6 +102,33 @@ class AuthService:
         await self.user_service.reset_password(email, new_password)
         await self.session_service.revoke_by_email(email)
 
+    async def request_email_change(self, user_id: str, new_email: str) -> None:
+        # Ensure new email is not already taken
+        await self.user_service.ensure_email_available(new_email)
+        # Store pending change in email_verifications keyed by new_email
+        # payload carries user_id so we can look it up on confirm
+        await self.email_code_service.create_pending_registration(
+            email=new_email,
+            payload={"purpose": "change_email", "user_id": user_id},
+        )
+
+    async def confirm_email_change(self, user_id: str, new_email: str, code: str) -> None:
+        payload = await self.email_code_service.verify_registration_code(new_email, code)
+        if payload.get("purpose") != "change_email" or payload.get("user_id") != user_id:
+            from app.exceptions import EDSServiceException
+            raise EDSServiceException(
+                code="CODE_INVALID",
+                message_ru="Неверный код подтверждения",
+                message_kz="Растау коды қате",
+                message_en="Invalid verification code",
+            )
+        await self.user_service.update_email(user_id, new_email)
+        # Revoke all sessions so user re-logs in with new email
+        await self.session_service.revoke_by_email(new_email)
+
+    async def change_password(self, user_id: str, current_password: str, new_password: str) -> None:
+        await self.user_service.change_password(user_id, current_password, new_password)
+
     async def logout(self, access_token: str) -> None:
         await self.session_service.revoke_by_access_token(access_token)
 
