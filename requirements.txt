@@ -1,5 +1,6 @@
 annotated-doc==0.0.4
 boto3==1.38.0
+imageio-ffmpeg==0.5.1
 annotated-types==0.7.0
 anyio==4.12.1
 async-timeout==5.0.1
