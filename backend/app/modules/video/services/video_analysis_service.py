@@ -95,8 +95,18 @@ class VideoAnalysisService:
             job_desc,
         )
 
-        # --- 4. Save to DB ---
+        # --- 4. Save to DB and notify candidate ---
         async with database.db_pool.acquire() as conn:
+            candidate_info = await conn.fetchrow(
+                """
+                SELECT cp.user_id, jp.title AS job_title
+                FROM applications a
+                JOIN candidate_profiles cp ON cp.id = a.candidate_id
+                JOIN job_postings jp ON jp.id = a.job_posting_id
+                WHERE a.id = $1::uuid
+                """,
+                application_id,
+            )
             row = await conn.fetchrow(
                 """
                 INSERT INTO video_analyses
@@ -132,7 +142,25 @@ class VideoAnalysisService:
                 json.dumps(result["strengths"]),
                 json.dumps(result["concerns"]),
             )
-            return dict(row)
+        if candidate_info:
+            verdict = result.get("verdict", "")
+            verdict_msgs = {
+                "Good Fit":    "Great news — you're a strong match for this role! 🎉",
+                "Partial Fit": "You showed relevant qualities. Keep it up!",
+                "Not a Fit":   "The recruiter has reviewed your video interview.",
+            }
+            note = verdict_msgs.get(verdict, "Your video interview has been analyzed.")
+            try:
+                from app.modules.notifications.services.notification_service import NotificationService
+                await NotificationService().create(
+                    str(candidate_info["user_id"]),
+                    "system",
+                    f'Video interview for "{candidate_info["job_title"]}" analyzed. {note}',
+                    {"application_id": application_id, "verdict": verdict},
+                )
+            except Exception:
+                pass
+        return dict(row)
 
     def _run_analysis_sync(
         self,

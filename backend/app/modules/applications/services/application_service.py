@@ -53,7 +53,72 @@ class ApplicationService:
                 resume_id,
                 cover_letter,
             )
-            return dict(row)
+        result = dict(row)
+        if resume_id:
+            asyncio.create_task(self._analyze_resume_background(str(result["id"])))
+        return result
+
+    async def _analyze_resume_background(self, application_id: str) -> None:
+        """Silently runs CV AI screening after a candidate applies. Never raises."""
+        from app.ai.cv_ml import rank_resumes_against_job
+        from app.storage import storage
+        try:
+            async with database.db_pool.acquire() as conn:
+                row = await conn.fetchrow(
+                    """
+                    SELECT a.resume_id, a.job_posting_id,
+                           jp.description AS job_description, jp.title AS job_title
+                    FROM applications a
+                    JOIN job_postings jp ON jp.id = a.job_posting_id
+                    WHERE a.id = $1::uuid
+                    """,
+                    application_id,
+                )
+                if not row or not row["resume_id"]:
+                    return
+                resume_row = await conn.fetchrow(
+                    "SELECT file_path, file_url, original_filename FROM resumes WHERE id = $1::uuid",
+                    row["resume_id"],
+                )
+            if not resume_row:
+                return
+            url_path = resume_row["file_path"] or resume_row["file_url"] or ""
+            if not url_path:
+                return
+            try:
+                content = await storage.read(url_path)
+            except Exception:
+                return
+            filename = resume_row["original_filename"] or "resume"
+            job_description = row["job_description"] or row["job_title"] or ""
+            results = await asyncio.to_thread(
+                rank_resumes_against_job, job_description, [(filename, content)]
+            )
+            result = results[0] if results else {}
+            async with database.db_pool.acquire() as conn:
+                await conn.execute(
+                    """
+                    INSERT INTO ai_resume_analyses
+                        (application_id, resume_id, job_posting_id,
+                         matching_score, skills_matched, skills_missing, summary, rank_position,
+                         skill_overlap, semantic_score, experience_years, education, analyzed_at)
+                    VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5, $6, $7, 1, $8, $9, $10, $11, NOW())
+                    ON CONFLICT (application_id) DO NOTHING
+                    """,
+                    application_id,
+                    row["resume_id"],
+                    row["job_posting_id"],
+                    result.get("match_score", 0.0),
+                    result.get("skills", []),
+                    [],
+                    result.get("preview", "")[:500],
+                    result.get("skill_overlap", 0.0),
+                    result.get("semantic_score", 0.0),
+                    result.get("experience_years", 0),
+                    result.get("education", ""),
+                )
+        except Exception:
+            pass
 
     async def list_for_candidate(self, user_id: str) -> list[dict]:
         async with database.db_pool.acquire() as conn:
@@ -152,6 +217,11 @@ class ApplicationService:
                         message_kz="Рұқсат жоқ",
                         message_en="Access denied",
                     )
+            ai = await conn.fetchrow(
+                "SELECT * FROM ai_resume_analyses WHERE application_id = $1::uuid",
+                application_id,
+            )
+            result["ai_analysis"] = dict(ai) if ai else None
             return result
 
     async def get_candidate_profile(self, application_id: str, recruiter_user_id: str) -> dict:
@@ -331,6 +401,7 @@ class ApplicationService:
             }
 
     async def update_status(self, application_id: str, user_id: str, status: str) -> dict:
+        from app.modules.notifications.services.notification_service import NotificationService
         async with database.db_pool.acquire() as conn:
             recruiter_id = await self._recruiter_id(conn, user_id)
             row = await conn.fetchrow(
@@ -354,4 +425,34 @@ class ApplicationService:
                     message_kz="Өтініш табылмады немесе рұқсат жоқ",
                     message_en="Application not found or access denied",
                 )
-            return dict(row)
+            info = await conn.fetchrow(
+                """
+                SELECT cp.user_id, jp.title AS job_title
+                FROM applications a
+                JOIN candidate_profiles cp ON cp.id = a.candidate_id
+                JOIN job_postings jp ON jp.id = a.job_posting_id
+                WHERE a.id = $1::uuid
+                """,
+                application_id,
+            )
+        result = dict(row)
+        if info:
+            status_messages = {
+                "reviewing":            "is now being reviewed by the recruiter",
+                "shortlisted":          "has been shortlisted 🎉",
+                "interview_scheduled":  "has been scheduled for an interview",
+                "rejected":             "was not selected for this position",
+                "hired":                "has been accepted — congratulations! 🎉",
+                "pending":              "is pending review",
+            }
+            msg = status_messages.get(status, f"status was updated to: {status}")
+            try:
+                await NotificationService().create(
+                    str(info["user_id"]),
+                    "status_changed",
+                    f'Your application for "{info["job_title"]}" {msg}.',
+                    {"application_id": application_id, "status": status},
+                )
+            except Exception:
+                pass
+        return result
