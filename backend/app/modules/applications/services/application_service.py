@@ -156,12 +156,13 @@ class ApplicationService:
 
     async def get_candidate_profile(self, application_id: str, recruiter_user_id: str) -> dict:
         """Полный профиль кандидата по заявке — только для рекрутера-владельца вакансии."""
+        from app.storage import storage
+
         async with database.db_pool.acquire() as conn:
             recruiter_id = await self._recruiter_id(conn, recruiter_user_id)
-            # Проверяем что заявка принадлежит этому рекрутеру
             app = await conn.fetchrow(
                 """
-                SELECT a.candidate_id, a.job_posting_id, a.status, a.cover_letter, a.applied_at
+                SELECT a.candidate_id, a.job_posting_id, a.resume_id, a.status, a.cover_letter, a.applied_at
                 FROM applications a
                 JOIN job_postings jp ON jp.id = a.job_posting_id
                 WHERE a.id = $1::uuid AND jp.recruiter_id = $2::uuid
@@ -176,44 +177,35 @@ class ApplicationService:
                     message_en="Application not found or access denied",
                 )
             candidate_id = str(app["candidate_id"])
+
             profile = await conn.fetchrow(
-                """
-                SELECT cp.*, u.email
-                FROM candidate_profiles cp
-                JOIN users u ON u.id = cp.user_id
-                WHERE cp.id = $1::uuid
-                """,
+                "SELECT cp.*, u.email FROM candidate_profiles cp JOIN users u ON u.id = cp.user_id WHERE cp.id = $1::uuid",
                 candidate_id,
             )
             skills = await conn.fetch(
-                "SELECT * FROM candidate_skills WHERE candidate_id = $1::uuid",
-                candidate_id,
+                "SELECT * FROM candidate_skills WHERE candidate_id = $1::uuid", candidate_id
             )
-            resumes = await conn.fetch(
-                """
-                SELECT id, original_filename, file_path, file_url, is_primary, uploaded_at
-                FROM resumes
-                WHERE candidate_id = $1::uuid
-                   OR id = $2::uuid
-                ORDER BY is_primary DESC, uploaded_at DESC
-                """,
-                candidate_id,
-                app["resume_id"],
-            ) if app["resume_id"] else await conn.fetch(
-                "SELECT id, original_filename, file_path, file_url, is_primary, uploaded_at FROM resumes WHERE candidate_id = $1::uuid ORDER BY is_primary DESC, uploaded_at DESC",
-                candidate_id,
-            )
-            # AI анализ если уже был
+            if app["resume_id"]:
+                resumes = await conn.fetch(
+                    """
+                    SELECT id, original_filename, file_path, file_url, is_primary, uploaded_at
+                    FROM resumes
+                    WHERE candidate_id = $1::uuid OR id = $2::uuid
+                    ORDER BY is_primary DESC, uploaded_at DESC
+                    """,
+                    candidate_id, app["resume_id"],
+                )
+            else:
+                resumes = await conn.fetch(
+                    "SELECT id, original_filename, file_path, file_url, is_primary, uploaded_at FROM resumes WHERE candidate_id = $1::uuid ORDER BY is_primary DESC, uploaded_at DESC",
+                    candidate_id,
+                )
             ai = await conn.fetchrow(
-                "SELECT * FROM ai_resume_analyses WHERE application_id = $1::uuid",
-                application_id,
+                "SELECT * FROM ai_resume_analyses WHERE application_id = $1::uuid", application_id
             )
-            from app.storage import storage
+
             resume_list = [
-                {
-                    **dict(r),
-                    "file_url": storage.public_url(r.get("file_path") or r.get("file_url") or ""),
-                }
+                {**dict(r), "file_url": storage.public_url(r.get("file_path") or r.get("file_url") or "")}
                 for r in resumes
             ]
             return {
