@@ -1,5 +1,8 @@
-from app.storage.local_storage import LocalStorage
+import os
 
-# Единая точка доступа к хранилищу.
-# Чтобы переключиться на MinIO — заменить LocalStorage на MinioStorage здесь.
-storage = LocalStorage()
+if os.getenv("SPACES_KEY") and os.getenv("SPACES_SECRET"):
+    from app.storage.spaces_storage import SpacesStorage
+    storage = SpacesStorage()
+else:
+    from app.storage.local_storage import LocalStorage
+    storage = LocalStorage()

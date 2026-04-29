@@ -190,7 +190,7 @@ class ApplicationService:
                 candidate_id,
             )
             resumes = await conn.fetch(
-                "SELECT id, original_filename, file_url, is_primary, uploaded_at FROM resumes WHERE candidate_id = $1::uuid ORDER BY is_primary DESC, uploaded_at DESC",
+                "SELECT id, original_filename, file_path, file_url, is_primary, uploaded_at FROM resumes WHERE candidate_id = $1::uuid ORDER BY is_primary DESC, uploaded_at DESC",
                 candidate_id,
             )
             # AI анализ если уже был
@@ -198,18 +198,26 @@ class ApplicationService:
                 "SELECT * FROM ai_resume_analyses WHERE application_id = $1::uuid",
                 application_id,
             )
+            from app.storage import storage
+            resume_list = [
+                {
+                    **dict(r),
+                    "file_url": storage.public_url(r.get("file_path") or r.get("file_url") or ""),
+                }
+                for r in resumes
+            ]
             return {
                 "application": dict(app),
                 "profile": dict(profile) if profile else {},
                 "skills": [dict(s) for s in skills],
-                "resumes": [dict(r) for r in resumes],
+                "resumes": resume_list,
                 "ai_analysis": dict(ai) if ai else None,
             }
 
     async def analyze_resume(self, application_id: str, recruiter_user_id: str) -> dict:
         """Запускает AI-анализ резюме кандидата против описания вакансии."""
         from app.ai.cv_ml import rank_resumes_against_job
-        from app.storage.local_storage import MEDIA_ROOT
+        from app.storage import storage
 
         async with database.db_pool.acquire() as conn:
             recruiter_id = await self._recruiter_id(conn, recruiter_user_id)
@@ -235,15 +243,15 @@ class ApplicationService:
             resume_row = None
             if row["resume_id"]:
                 resume_row = await conn.fetchrow(
-                    "SELECT file_url, original_filename FROM resumes WHERE id = $1::uuid",
+                    "SELECT file_path, file_url, original_filename FROM resumes WHERE id = $1::uuid",
                     row["resume_id"],
                 )
             if not resume_row:
                 resume_row = await conn.fetchrow(
-                    "SELECT file_url, original_filename FROM resumes WHERE candidate_id = $1::uuid AND is_primary = TRUE LIMIT 1",
+                    "SELECT file_path, file_url, original_filename FROM resumes WHERE candidate_id = $1::uuid AND is_primary = TRUE LIMIT 1",
                     row["candidate_id"],
                 )
-            if not resume_row or not resume_row["file_url"]:
+            if not resume_row:
                 raise EDSServiceException(
                     code="RESUME_NOT_FOUND",
                     message_ru="Резюме кандидата не найдено",
@@ -251,19 +259,25 @@ class ApplicationService:
                     message_en="Candidate resume not found",
                 )
 
-            # Читаем файл с диска
-            file_url: str = resume_row["file_url"]
-            relative = file_url.lstrip("/").removeprefix("media/")
-            file_path = MEDIA_ROOT / relative
-            if not file_path.exists():
+            # Читаем файл через storage backend (работает и локально и в Spaces)
+            url_path: str = resume_row["file_path"] or resume_row["file_url"] or ""
+            if not url_path:
                 raise EDSServiceException(
                     code="RESUME_FILE_NOT_FOUND",
                     message_ru="Файл резюме не найден",
                     message_kz="Түйіндеме файлы табылмады",
                     message_en="Resume file not found on server",
                 )
-            content = file_path.read_bytes()
-            filename = resume_row["original_filename"] or file_path.name
+            try:
+                content = await storage.read(url_path)
+            except Exception:
+                raise EDSServiceException(
+                    code="RESUME_FILE_NOT_FOUND",
+                    message_ru="Файл резюме не найден",
+                    message_kz="Түйіндеме файлы табылмады",
+                    message_en="Resume file not found on server",
+                )
+            filename = resume_row["original_filename"] or url_path.rsplit("/", 1)[-1]
             job_description = row["job_description"] or row["job_title"] or ""
 
             # Запускаем ML в отдельном потоке

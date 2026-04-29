@@ -33,6 +33,10 @@ CREATE TABLE candidate_profiles (
     date_of_birth DATE,
     bio TEXT,
     city VARCHAR(255),
+    country VARCHAR(255),
+    linkedin_url TEXT,
+    github_url TEXT,
+    is_open_to_work BOOLEAN NOT NULL DEFAULT FALSE,
     avatar_url TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
@@ -47,6 +51,9 @@ CREATE TABLE recruiter_profiles (
     company_description TEXT,
     phone VARCHAR(50),
     website VARCHAR(255),
+    logo_url TEXT,
+    city VARCHAR(255),
+    country VARCHAR(255),
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );

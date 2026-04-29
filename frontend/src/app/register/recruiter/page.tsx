@@ -52,7 +52,7 @@ export default function RegisterRecruiterPage() {
               <Input label="Last name" value={form.last_name} onChange={set("last_name")} required />
             </div>
             <Input label="Email" type="email" value={form.email} onChange={set("email")} required />
-            <Input label="Password" type="password" value={form.password} onChange={set("password")} required minLength={6} />
+            <Input label="Password (min 8 chars, must include a letter and a digit)" type="password" value={form.password} onChange={set("password")} required minLength={8} />
             <Input label="Company name" value={form.company_name} onChange={set("company_name")} required />
             <Input label="Your position" value={form.position} onChange={set("position")} required />
             <Button type="submit" loading={loading} size="lg" className="w-full">Create account</Button>

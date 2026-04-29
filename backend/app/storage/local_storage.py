@@ -32,6 +32,10 @@ class LocalStorage(StorageBackend):
         url_path = f"{MEDIA_URL}/{folder}/{file_uuid}{ext}"
         return file_uuid, url_path
 
+    async def read(self, url_path: str) -> bytes:
+        relative = url_path.removeprefix(MEDIA_URL).lstrip("/")
+        return (MEDIA_ROOT / relative).read_bytes()
+
     async def delete(self, url_path: str) -> None:
         """Удаляет файл по url_path ('/media/resumes/uuid.pdf')."""
         relative = url_path.removeprefix(MEDIA_URL).lstrip("/")

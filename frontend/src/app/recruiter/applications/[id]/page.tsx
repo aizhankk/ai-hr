@@ -199,26 +199,45 @@ export default function CandidateProfilePage() {
             </div>
           )}
 
-          {/* Resume attached to this application */}
+          {/* Resumes */}
           {(() => {
             const attached = resumes.find((r) => r.id === app.resume_id);
+            const others = resumes.filter((r) => r.id !== app.resume_id);
+            const list = attached ? [attached, ...others] : resumes;
             return (
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
                 <h2 className="text-sm font-semibold text-slate-800 mb-3 flex items-center gap-2">
                   <FileText size={15} className="text-slate-400" /> Resume
                 </h2>
-                {attached ? (
-                  <div className="flex items-center justify-between px-3 py-2 rounded-xl border border-slate-100 bg-slate-50">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <FileText size={14} className="text-slate-400 shrink-0" />
-                      <span className="text-sm text-slate-700 truncate">{attached.original_filename as string}</span>
-                    </div>
-                    {attached.file_url ? (
-                      <a href={attached.file_url as string} target="_blank" rel="noopener noreferrer"
-                        className="text-xs text-indigo-600 hover:underline shrink-0 ml-3">
-                        Download
-                      </a>
-                    ) : null}
+                {list.length > 0 ? (
+                  <div className="flex flex-col gap-2">
+                    {list.map((r) => (
+                      <div key={r.id as string}
+                        className="flex items-center justify-between px-3 py-2.5 rounded-xl border border-slate-100 bg-slate-50 gap-3">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <FileText size={14} className="text-slate-400 shrink-0" />
+                          <span className="text-sm text-slate-700 truncate">
+                            {r.original_filename as string}
+                          </span>
+                          {r.id === app.resume_id && (
+                            <span className="text-[10px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded-full shrink-0">
+                              attached
+                            </span>
+                          )}
+                          {r.is_primary && r.id !== app.resume_id && (
+                            <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full shrink-0">
+                              primary
+                            </span>
+                          )}
+                        </div>
+                        {r.file_url ? (
+                          <a href={r.file_url as string} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center gap-1 shrink-0 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded-lg transition-colors">
+                            <FileText size={11} /> View CV
+                          </a>
+                        ) : null}
+                      </div>
+                    ))}
                   </div>
                 ) : (
                   <p className="text-sm text-slate-400">No resume attached to this application.</p>

@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 class StorageBackend(ABC):
     """
     Интерфейс хранилища файлов.
-    Реализации: LocalStorage, MinioStorage (будущее).
+    Реализации: LocalStorage, SpacesStorage.
     """
 
     @abstractmethod
@@ -14,6 +14,10 @@ class StorageBackend(ABC):
         file_uuid — уникальный идентификатор объекта (UUID строка).
         url_path  — путь/ключ для скачивания файла.
         """
+
+    @abstractmethod
+    async def read(self, url_path: str) -> bytes:
+        """Читает и возвращает содержимое файла по его url_path."""
 
     @abstractmethod
     async def delete(self, url_path: str) -> None:
