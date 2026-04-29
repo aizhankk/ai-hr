@@ -8,7 +8,7 @@ from db import database
 class ResumeService:
     async def _candidate_id(self, conn, user_id: str) -> str:
         row = await conn.fetchval(
-            "SELECT id FROM aihr.candidate_profiles WHERE user_id = $1::uuid", user_id
+            "SELECT id FROM candidate_profiles WHERE user_id = $1::uuid", user_id
         )
         if not row:
             raise EDSServiceException(
@@ -26,12 +26,12 @@ class ResumeService:
         async with database.db_pool.acquire() as conn:
             candidate_id = await self._candidate_id(conn, user_id)
             has_primary = await conn.fetchval(
-                "SELECT 1 FROM aihr.resumes WHERE candidate_id = $1::uuid AND is_primary = TRUE",
+                "SELECT 1 FROM resumes WHERE candidate_id = $1::uuid AND is_primary = TRUE",
                 candidate_id,
             )
             row = await conn.fetchrow(
                 """
-                INSERT INTO aihr.resumes
+                INSERT INTO resumes
                     (candidate_id, file_uuid, file_path, file_url, original_filename,
                      file_size_bytes, mime_type, is_primary)
                 VALUES ($1::uuid, $2::uuid, $3, $3, $4, $5, $6, $7)
@@ -51,7 +51,7 @@ class ResumeService:
         async with database.db_pool.acquire() as conn:
             candidate_id = await self._candidate_id(conn, user_id)
             rows = await conn.fetch(
-                "SELECT * FROM aihr.resumes WHERE candidate_id = $1::uuid ORDER BY uploaded_at DESC",
+                "SELECT * FROM resumes WHERE candidate_id = $1::uuid ORDER BY uploaded_at DESC",
                 candidate_id,
             )
             return [
@@ -63,7 +63,7 @@ class ResumeService:
         async with database.db_pool.acquire() as conn:
             candidate_id = await self._candidate_id(conn, user_id)
             row = await conn.fetchrow(
-                "SELECT * FROM aihr.resumes WHERE id = $1::uuid AND candidate_id = $2::uuid",
+                "SELECT * FROM resumes WHERE id = $1::uuid AND candidate_id = $2::uuid",
                 resume_id, candidate_id,
             )
             if not row:
@@ -75,21 +75,21 @@ class ResumeService:
                 )
             result = {**dict(row), "file_url": storage.public_url(row.get("file_path") or row.get("file_url") or "")}
             parsed = await conn.fetchrow(
-                "SELECT * FROM aihr.resume_parsed_data WHERE resume_id = $1::uuid", resume_id
+                "SELECT * FROM resume_parsed_data WHERE resume_id = $1::uuid", resume_id
             )
             result["parsed_data"] = dict(parsed) if parsed else None
             edu = await conn.fetch(
-                "SELECT * FROM aihr.resume_education WHERE resume_id = $1::uuid ORDER BY display_order",
+                "SELECT * FROM resume_education WHERE resume_id = $1::uuid ORDER BY display_order",
                 resume_id,
             )
             result["education"] = [dict(e) for e in edu]
             exp = await conn.fetch(
-                "SELECT * FROM aihr.resume_work_experience WHERE resume_id = $1::uuid ORDER BY display_order",
+                "SELECT * FROM resume_work_experience WHERE resume_id = $1::uuid ORDER BY display_order",
                 resume_id,
             )
             result["work_experience"] = [dict(e) for e in exp]
             skills = await conn.fetch(
-                "SELECT * FROM aihr.resume_skills WHERE resume_id = $1::uuid", resume_id
+                "SELECT * FROM resume_skills WHERE resume_id = $1::uuid", resume_id
             )
             result["skills"] = [dict(s) for s in skills]
             return result
@@ -98,7 +98,7 @@ class ResumeService:
         async with database.db_pool.acquire() as conn:
             candidate_id = await self._candidate_id(conn, user_id)
             row = await conn.fetchrow(
-                "SELECT file_path FROM aihr.resumes WHERE id = $1::uuid AND candidate_id = $2::uuid",
+                "SELECT file_path FROM resumes WHERE id = $1::uuid AND candidate_id = $2::uuid",
                 resume_id, candidate_id,
             )
             if not row:
@@ -108,7 +108,7 @@ class ResumeService:
                     message_kz="Түйіндеме табылмады",
                     message_en="Resume not found",
                 )
-            await conn.execute("DELETE FROM aihr.resumes WHERE id = $1::uuid", resume_id)
+            await conn.execute("DELETE FROM resumes WHERE id = $1::uuid", resume_id)
         if row["file_path"]:
             await storage.delete(row["file_path"])
 
@@ -116,7 +116,7 @@ class ResumeService:
         async with database.db_pool.acquire() as conn:
             candidate_id = await self._candidate_id(conn, user_id)
             owns = await conn.fetchval(
-                "SELECT 1 FROM aihr.resumes WHERE id = $1::uuid AND candidate_id = $2::uuid",
+                "SELECT 1 FROM resumes WHERE id = $1::uuid AND candidate_id = $2::uuid",
                 resume_id, candidate_id,
             )
             if not owns:
@@ -128,11 +128,11 @@ class ResumeService:
                 )
             async with conn.transaction():
                 await conn.execute(
-                    "UPDATE aihr.resumes SET is_primary = FALSE WHERE candidate_id = $1::uuid",
+                    "UPDATE resumes SET is_primary = FALSE WHERE candidate_id = $1::uuid",
                     candidate_id,
                 )
                 row = await conn.fetchrow(
-                    "UPDATE aihr.resumes SET is_primary = TRUE WHERE id = $1::uuid RETURNING *",
+                    "UPDATE resumes SET is_primary = TRUE WHERE id = $1::uuid RETURNING *",
                     resume_id,
                 )
             return {**dict(row), "file_url": storage.public_url(row.get("file_path") or row.get("file_url") or "")}

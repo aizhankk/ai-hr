@@ -7,7 +7,7 @@ class JobService:
     async def _require_recruiter(self, conn, user_id: str) -> str:
         """Return recruiter_profiles.id for the given user, raises if not found."""
         row = await conn.fetchval(
-            "SELECT id FROM aihr.recruiter_profiles WHERE user_id = $1::uuid",
+            "SELECT id FROM recruiter_profiles WHERE user_id = $1::uuid",
             user_id,
         )
         if not row:
@@ -24,10 +24,10 @@ class JobService:
             recruiter_id = await self._require_recruiter(conn, user_id)
             row = await conn.fetchrow(
                 """
-                INSERT INTO aihr.job_postings
+                INSERT INTO job_postings
                     (recruiter_id, title, description, requirements, employment_type,
                      location, is_remote, salary_min, salary_max, currency, status)
-                VALUES ($1::uuid, $2, $3, $4, $5::aihr.employment_type,
+                VALUES ($1::uuid, $2, $3, $4, $5::employment_type,
                         $6, $7, $8, $9, $10, 'draft')
                 RETURNING *
                 """,
@@ -63,7 +63,7 @@ class JobService:
                 )
             if employment_type:
                 args.append(employment_type)
-                filters.append(f"jp.employment_type = ${len(args)}::aihr.employment_type")
+                filters.append(f"jp.employment_type = ${len(args)}::employment_type")
             if location:
                 args.append(f"%{location.lower()}%")
                 filters.append(f"LOWER(jp.location) LIKE ${len(args)}")
@@ -73,8 +73,8 @@ class JobService:
             rows = await conn.fetch(
                 f"""
                 SELECT jp.*, rp.company_name
-                FROM aihr.job_postings jp
-                JOIN aihr.recruiter_profiles rp ON rp.id = jp.recruiter_id
+                FROM job_postings jp
+                JOIN recruiter_profiles rp ON rp.id = jp.recruiter_id
                 WHERE {where}
                 ORDER BY jp.published_at DESC
                 LIMIT ${len(args) - 1} OFFSET ${len(args)}
@@ -88,8 +88,8 @@ class JobService:
             row = await conn.fetchrow(
                 """
                 SELECT jp.*, rp.company_name
-                FROM aihr.job_postings jp
-                JOIN aihr.recruiter_profiles rp ON rp.id = jp.recruiter_id
+                FROM job_postings jp
+                JOIN recruiter_profiles rp ON rp.id = jp.recruiter_id
                 WHERE jp.id = $1::uuid
                 """,
                 job_id,
@@ -102,7 +102,7 @@ class JobService:
                     message_en="Job posting not found",
                 )
             skills = await conn.fetch(
-                "SELECT * FROM aihr.job_skills WHERE job_posting_id = $1::uuid",
+                "SELECT * FROM job_skills WHERE job_posting_id = $1::uuid",
                 job_id,
             )
             result = dict(row)
@@ -113,7 +113,7 @@ class JobService:
         async with database.db_pool.acquire() as conn:
             recruiter_id = await self._require_recruiter(conn, user_id)
             rows = await conn.fetch(
-                "SELECT * FROM aihr.job_postings WHERE recruiter_id = $1::uuid ORDER BY created_at DESC",
+                "SELECT * FROM job_postings WHERE recruiter_id = $1::uuid ORDER BY created_at DESC",
                 recruiter_id,
             )
             return [dict(r) for r in rows]
@@ -126,7 +126,7 @@ class JobService:
             recruiter_id = await self._require_recruiter(conn, user_id)
             set_parts = [f"{k} = ${i + 3}" for i, k in enumerate(fields)]
             query = (
-                f"UPDATE aihr.job_postings "
+                f"UPDATE job_postings "
                 f"SET {', '.join(set_parts)}, updated_at = NOW() "
                 f"WHERE id = $1::uuid AND recruiter_id = $2::uuid "
                 f"RETURNING *"
@@ -147,8 +147,8 @@ class JobService:
             published_at_clause = ", published_at = NOW()" if status == "published" else ""
             row = await conn.fetchrow(
                 f"""
-                UPDATE aihr.job_postings
-                SET status = $3::aihr.job_status, updated_at = NOW(){published_at_clause}
+                UPDATE job_postings
+                SET status = $3::job_status, updated_at = NOW(){published_at_clause}
                 WHERE id = $1::uuid AND recruiter_id = $2::uuid
                 RETURNING *
                 """,
@@ -169,7 +169,7 @@ class JobService:
         async with database.db_pool.acquire() as conn:
             recruiter_id = await self._require_recruiter(conn, user_id)
             result = await conn.execute(
-                "DELETE FROM aihr.job_postings WHERE id = $1::uuid AND recruiter_id = $2::uuid",
+                "DELETE FROM job_postings WHERE id = $1::uuid AND recruiter_id = $2::uuid",
                 job_id,
                 recruiter_id,
             )
@@ -187,7 +187,7 @@ class JobService:
         async with database.db_pool.acquire() as conn:
             recruiter_id = await self._require_recruiter(conn, user_id)
             owns = await conn.fetchval(
-                "SELECT 1 FROM aihr.job_postings WHERE id = $1::uuid AND recruiter_id = $2::uuid",
+                "SELECT 1 FROM job_postings WHERE id = $1::uuid AND recruiter_id = $2::uuid",
                 job_id,
                 recruiter_id,
             )
@@ -200,8 +200,8 @@ class JobService:
                 )
             row = await conn.fetchrow(
                 """
-                INSERT INTO aihr.job_skills (job_posting_id, skill_name, level, is_required)
-                VALUES ($1::uuid, $2, $3::aihr.skill_level, $4)
+                INSERT INTO job_skills (job_posting_id, skill_name, level, is_required)
+                VALUES ($1::uuid, $2, $3::skill_level, $4)
                 RETURNING *
                 """,
                 job_id,
@@ -215,7 +215,7 @@ class JobService:
         async with database.db_pool.acquire() as conn:
             recruiter_id = await self._require_recruiter(conn, user_id)
             owns = await conn.fetchval(
-                "SELECT 1 FROM aihr.job_postings WHERE id = $1::uuid AND recruiter_id = $2::uuid",
+                "SELECT 1 FROM job_postings WHERE id = $1::uuid AND recruiter_id = $2::uuid",
                 job_id,
                 recruiter_id,
             )
@@ -227,7 +227,7 @@ class JobService:
                     message_en="Job not found or access denied",
                 )
             result = await conn.execute(
-                "DELETE FROM aihr.job_skills WHERE id = $1::uuid AND job_posting_id = $2::uuid",
+                "DELETE FROM job_skills WHERE id = $1::uuid AND job_posting_id = $2::uuid",
                 skill_id,
                 job_id,
             )

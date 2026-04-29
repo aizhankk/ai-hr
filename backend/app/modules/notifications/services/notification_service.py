@@ -8,7 +8,7 @@ class NotificationService:
         async with database.db_pool.acquire() as conn:
             rows = await conn.fetch(
                 """
-                SELECT * FROM aihr.notifications
+                SELECT * FROM notifications
                 WHERE user_id = $1::uuid
                 ORDER BY created_at DESC
                 """,
@@ -20,7 +20,7 @@ class NotificationService:
         async with database.db_pool.acquire() as conn:
             result = await conn.execute(
                 """
-                UPDATE aihr.notifications
+                UPDATE notifications
                 SET is_read = TRUE
                 WHERE id = $1::uuid AND user_id = $2::uuid
                 """,
@@ -38,7 +38,7 @@ class NotificationService:
     async def mark_all_read(self, user_id: str) -> None:
         async with database.db_pool.acquire() as conn:
             await conn.execute(
-                "UPDATE aihr.notifications SET is_read = TRUE WHERE user_id = $1::uuid",
+                "UPDATE notifications SET is_read = TRUE WHERE user_id = $1::uuid",
                 user_id,
             )
 
@@ -52,8 +52,8 @@ class NotificationService:
         async with database.db_pool.acquire() as conn:
             row = await conn.fetchrow(
                 """
-                INSERT INTO aihr.notifications (user_id, type, message, payload)
-                VALUES ($1::uuid, $2::aihr.notification_type, $3, $4)
+                INSERT INTO notifications (user_id, type, message, payload)
+                VALUES ($1::uuid, $2::notification_type, $3, $4)
                 RETURNING *
                 """,
                 user_id,

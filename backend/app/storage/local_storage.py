@@ -22,8 +22,8 @@ class LocalStorage(StorageBackend):
         """
         Сохраняет файл.
         Возвращает (file_uuid: str, url_path: str).
-          file_uuid → хранится в aihr.resumes.file_uuid (UUID)
-          url_path  → хранится в aihr.resumes.file_path (VARCHAR) для скачивания
+          file_uuid → хранится в resumes.file_uuid (UUID)
+          url_path  → хранится в resumes.file_path (VARCHAR) для скачивания
         """
         file_uuid = str(uuid.uuid4())
         ext = Path(filename).suffix or ""

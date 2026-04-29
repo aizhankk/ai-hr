@@ -15,7 +15,7 @@ class SessionService:
         async with database.db_pool.acquire() as conn:
             await conn.execute(
                 """
-                INSERT INTO aihr.user_sessions (user_id, session_token, refresh_token, expires_at, is_active)
+                INSERT INTO user_sessions (user_id, session_token, refresh_token, expires_at, is_active)
                 VALUES ($1, $2, $3, $4, TRUE)
                 """,
                 user_id,
@@ -36,8 +36,8 @@ class SessionService:
             session = await conn.fetchrow(
                 """
                 SELECT us.id, u.id AS user_id, u.email, u.role
-                FROM aihr.user_sessions us
-                JOIN aihr.users u ON u.id = us.user_id
+                FROM user_sessions us
+                JOIN users u ON u.id = us.user_id
                 WHERE us.refresh_token = $1 AND us.is_active = TRUE AND us.revoked_at IS NULL AND us.expires_at > NOW()
                 LIMIT 1
                 """,
@@ -58,7 +58,7 @@ class SessionService:
         async with database.db_pool.acquire() as conn:
             await conn.execute(
                 """
-                UPDATE aihr.user_sessions
+                UPDATE user_sessions
                 SET session_token = $1, refresh_token = $2, expires_at = $3
                 WHERE id = $4
                 """,
@@ -74,7 +74,7 @@ class SessionService:
         async with database.db_pool.acquire() as conn:
             await conn.execute(
                 """
-                UPDATE aihr.user_sessions
+                UPDATE user_sessions
                 SET is_active = FALSE, revoked_at = NOW()
                 WHERE session_token = $1
                 """,
@@ -87,9 +87,9 @@ class SessionService:
         async with database.db_pool.acquire() as conn:
             await conn.execute(
                 """
-                UPDATE aihr.user_sessions
+                UPDATE user_sessions
                 SET is_active = FALSE, revoked_at = NOW()
-                WHERE user_id = (SELECT id FROM aihr.users WHERE email = $1)
+                WHERE user_id = (SELECT id FROM users WHERE email = $1)
                 """,
                 email,
             )

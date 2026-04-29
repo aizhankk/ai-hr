@@ -11,9 +11,9 @@ class VideoService:
         row = await conn.fetchrow(
             """
             SELECT a.id, a.candidate_id
-            FROM aihr.applications a
-            JOIN aihr.job_postings jp    ON jp.id = a.job_posting_id
-            JOIN aihr.recruiter_profiles rp ON rp.id = jp.recruiter_id
+            FROM applications a
+            JOIN job_postings jp    ON jp.id = a.job_posting_id
+            JOIN recruiter_profiles rp ON rp.id = jp.recruiter_id
             WHERE a.id = $1::uuid AND rp.user_id = $2::uuid
             """,
             application_id, user_id,
@@ -39,7 +39,7 @@ class VideoService:
 
             row = await conn.fetchrow(
                 """
-                INSERT INTO aihr.video_interviews
+                INSERT INTO video_interviews
                     (application_id, candidate_id, video_url, file_size_bytes, status, recorded_at)
                 VALUES ($1::uuid, $2::uuid, $3, $4, 'uploaded', NOW())
                 ON CONFLICT (application_id)
@@ -56,7 +56,7 @@ class VideoService:
     async def get_by_application(self, application_id: str) -> dict:
         async with database.db_pool.acquire() as conn:
             row = await conn.fetchrow(
-                "SELECT * FROM aihr.video_interviews WHERE application_id = $1::uuid",
+                "SELECT * FROM video_interviews WHERE application_id = $1::uuid",
                 application_id,
             )
             if not row:
@@ -68,7 +68,7 @@ class VideoService:
                 )
             result = dict(row)
             analysis = await conn.fetchrow(
-                "SELECT * FROM aihr.video_analyses WHERE video_interview_id = $1::uuid",
+                "SELECT * FROM video_analyses WHERE video_interview_id = $1::uuid",
                 str(row["id"]),
             )
             result["analysis"] = dict(analysis) if analysis else None

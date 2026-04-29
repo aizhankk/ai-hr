@@ -29,9 +29,9 @@ class VideoAnalysisService:
             app = await conn.fetchrow(
                 """
                 SELECT a.job_posting_id, jp.title, jp.description, jp.requirements
-                FROM aihr.applications a
-                JOIN aihr.job_postings jp    ON jp.id = a.job_posting_id
-                JOIN aihr.recruiter_profiles rp ON rp.id = jp.recruiter_id
+                FROM applications a
+                JOIN job_postings jp    ON jp.id = a.job_posting_id
+                JOIN recruiter_profiles rp ON rp.id = jp.recruiter_id
                 WHERE a.id = $1::uuid AND rp.user_id = $2::uuid
                 """,
                 application_id, recruiter_user_id,
@@ -45,7 +45,7 @@ class VideoAnalysisService:
                 )
 
             video = await conn.fetchrow(
-                "SELECT id, video_url FROM aihr.video_interviews WHERE application_id = $1::uuid",
+                "SELECT id, video_url FROM video_interviews WHERE application_id = $1::uuid",
                 application_id,
             )
             if not video or not video["video_url"]:
@@ -77,11 +77,11 @@ class VideoAnalysisService:
             self._run_analysis, file_path, job_title, job_desc
         )
 
-        # Сохраняем в aihr.video_analyses
+        # Сохраняем в video_analyses
         async with database.db_pool.acquire() as conn:
             row = await conn.fetchrow(
                 """
-                INSERT INTO aihr.video_analyses
+                INSERT INTO video_analyses
                     (video_interview_id, speech_clarity_score, confidence_score,
                      emotional_tone_score, overall_score,
                      speech_transcript, ai_summary, recommendations, analyzed_at)

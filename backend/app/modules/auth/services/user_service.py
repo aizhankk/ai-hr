@@ -18,7 +18,7 @@ class UserService:
                 message_en="Database unavailable",
             )
         async with database.db_pool.acquire() as conn:
-            exists = await conn.fetchval("SELECT 1 FROM aihr.users WHERE email = $1", email)
+            exists = await conn.fetchval("SELECT 1 FROM users WHERE email = $1", email)
             if exists:
                 raise EDSServiceException(
                     code="EMAIL_ALREADY_EXISTS",
@@ -45,7 +45,7 @@ class UserService:
             )
         async with database.db_pool.acquire() as conn:
             async with conn.transaction():
-                exists = await conn.fetchval("SELECT 1 FROM aihr.users WHERE email = $1", email)
+                exists = await conn.fetchval("SELECT 1 FROM users WHERE email = $1", email)
                 if exists:
                     raise EDSServiceException(
                         code="EMAIL_ALREADY_EXISTS",
@@ -55,8 +55,8 @@ class UserService:
                     )
                 user_id = await conn.fetchval(
                     """
-                    INSERT INTO aihr.users (email, password_hash, role, email_verified)
-                    VALUES ($1, $2, $3::aihr.user_role, TRUE)
+                    INSERT INTO users (email, password_hash, role, email_verified)
+                    VALUES ($1, $2, $3::user_role, TRUE)
                     RETURNING id
                     """,
                     email,
@@ -66,7 +66,7 @@ class UserService:
                 if role == "candidate":
                     await conn.execute(
                         """
-                        INSERT INTO aihr.candidate_profiles (user_id, first_name, last_name)
+                        INSERT INTO candidate_profiles (user_id, first_name, last_name)
                         VALUES ($1, $2, $3)
                         """,
                         user_id,
@@ -76,7 +76,7 @@ class UserService:
                 else:
                     await conn.execute(
                         """
-                        INSERT INTO aihr.recruiter_profiles (user_id, company_name, position)
+                        INSERT INTO recruiter_profiles (user_id, company_name, position)
                         VALUES ($1, $2, $3)
                         """,
                         user_id,
@@ -94,7 +94,7 @@ class UserService:
             )
         async with database.db_pool.acquire() as conn:
             row = await conn.fetchrow(
-                "SELECT id, email, role FROM aihr.users WHERE email = $1 AND is_active = TRUE",
+                "SELECT id, email, role FROM users WHERE email = $1 AND is_active = TRUE",
                 email,
             )
             if not row:
@@ -124,7 +124,7 @@ class UserService:
                     is_active,
                     email_verified,
                     created_at
-                FROM aihr.users
+                FROM users
                 ORDER BY created_at DESC
                 """
             )
@@ -159,7 +159,7 @@ class UserService:
         password_hash = self.password_service.hash_password(password)
         async with database.db_pool.acquire() as conn:
             async with conn.transaction():
-                exists = await conn.fetchval("SELECT 1 FROM aihr.users WHERE email = $1", email)
+                exists = await conn.fetchval("SELECT 1 FROM users WHERE email = $1", email)
                 if exists:
                     raise EDSServiceException(
                         code="EMAIL_ALREADY_EXISTS",
@@ -169,8 +169,8 @@ class UserService:
                     )
                 user_id = await conn.fetchval(
                     """
-                    INSERT INTO aihr.users (email, password_hash, role, email_verified)
-                    VALUES ($1, $2, $3::aihr.user_role, TRUE)
+                    INSERT INTO users (email, password_hash, role, email_verified)
+                    VALUES ($1, $2, $3::user_role, TRUE)
                     RETURNING id
                     """,
                     email,
@@ -180,7 +180,7 @@ class UserService:
                 if role == "candidate":
                     await conn.execute(
                         """
-                        INSERT INTO aihr.candidate_profiles (user_id, first_name, last_name)
+                        INSERT INTO candidate_profiles (user_id, first_name, last_name)
                         VALUES ($1, $2, $3)
                         """,
                         user_id,
@@ -190,7 +190,7 @@ class UserService:
                 else:
                     await conn.execute(
                         """
-                        INSERT INTO aihr.recruiter_profiles (user_id, company_name, position)
+                        INSERT INTO recruiter_profiles (user_id, company_name, position)
                         VALUES ($1, $2, $3)
                         """,
                         user_id,
@@ -208,7 +208,7 @@ class UserService:
             )
         async with database.db_pool.acquire() as conn:
             row = await conn.fetchrow(
-                "SELECT id, email, role, password_hash FROM aihr.users WHERE email = $1 AND is_active = TRUE",
+                "SELECT id, email, role, password_hash FROM users WHERE email = $1 AND is_active = TRUE",
                 email,
             )
             if not row or not self.password_service.verify_password(password, row["password_hash"]):
@@ -230,7 +230,7 @@ class UserService:
             )
         async with database.db_pool.acquire() as conn:
             await conn.execute(
-                "UPDATE aihr.users SET email = $1, updated_at = NOW() WHERE id = $2::uuid",
+                "UPDATE users SET email = $1, updated_at = NOW() WHERE id = $2::uuid",
                 new_email,
                 user_id,
             )
@@ -245,7 +245,7 @@ class UserService:
             )
         async with database.db_pool.acquire() as conn:
             row = await conn.fetchrow(
-                "SELECT password_hash FROM aihr.users WHERE id = $1::uuid AND is_active = TRUE",
+                "SELECT password_hash FROM users WHERE id = $1::uuid AND is_active = TRUE",
                 user_id,
             )
             if not row:
@@ -264,7 +264,7 @@ class UserService:
                 )
             new_hash = self.password_service.hash_password(new_password)
             await conn.execute(
-                "UPDATE aihr.users SET password_hash = $1, updated_at = NOW() WHERE id = $2::uuid",
+                "UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2::uuid",
                 new_hash,
                 user_id,
             )
@@ -280,7 +280,7 @@ class UserService:
         new_hash = self.password_service.hash_password(new_password)
         async with database.db_pool.acquire() as conn:
             updated = await conn.execute(
-                "UPDATE aihr.users SET password_hash = $1, updated_at = NOW() WHERE email = $2",
+                "UPDATE users SET password_hash = $1, updated_at = NOW() WHERE email = $2",
                 new_hash,
                 email,
             )

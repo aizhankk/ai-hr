@@ -108,8 +108,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
             row = await conn.fetchrow(
                 """
                 SELECT us.user_id, u.role
-                FROM aihr.user_sessions us
-                JOIN aihr.users u ON u.id = us.user_id
+                FROM user_sessions us
+                JOIN users u ON u.id = us.user_id
                 WHERE us.session_token = $1
                   AND us.is_active = TRUE
                   AND us.revoked_at IS NULL

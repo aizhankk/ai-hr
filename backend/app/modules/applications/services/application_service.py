@@ -9,7 +9,7 @@ from db import database
 class ApplicationService:
     async def _candidate_id(self, conn, user_id: str) -> str:
         row = await conn.fetchval(
-            "SELECT id FROM aihr.candidate_profiles WHERE user_id = $1::uuid", user_id
+            "SELECT id FROM candidate_profiles WHERE user_id = $1::uuid", user_id
         )
         if not row:
             raise EDSServiceException(
@@ -22,7 +22,7 @@ class ApplicationService:
 
     async def _recruiter_id(self, conn, user_id: str) -> str:
         row = await conn.fetchval(
-            "SELECT id FROM aihr.recruiter_profiles WHERE user_id = $1::uuid", user_id
+            "SELECT id FROM recruiter_profiles WHERE user_id = $1::uuid", user_id
         )
         if not row:
             raise EDSServiceException(
@@ -44,7 +44,7 @@ class ApplicationService:
             candidate_id = await self._candidate_id(conn, user_id)
             row = await conn.fetchrow(
                 """
-                INSERT INTO aihr.applications (candidate_id, job_posting_id, resume_id, cover_letter)
+                INSERT INTO applications (candidate_id, job_posting_id, resume_id, cover_letter)
                 VALUES ($1::uuid, $2::uuid, $3::uuid, $4)
                 RETURNING *
                 """,
@@ -63,10 +63,10 @@ class ApplicationService:
                 SELECT a.*, jp.title AS job_title, rp.company_name,
                        r.original_filename AS resume_filename,
                        r.file_url          AS resume_file_url
-                FROM aihr.applications a
-                JOIN aihr.job_postings jp       ON jp.id = a.job_posting_id
-                JOIN aihr.recruiter_profiles rp ON rp.id = jp.recruiter_id
-                LEFT JOIN aihr.resumes r        ON r.id  = a.resume_id
+                FROM applications a
+                JOIN job_postings jp       ON jp.id = a.job_posting_id
+                JOIN recruiter_profiles rp ON rp.id = jp.recruiter_id
+                LEFT JOIN resumes r        ON r.id  = a.resume_id
                 WHERE a.candidate_id = $1::uuid
                 ORDER BY a.applied_at DESC
                 """,
@@ -84,11 +84,11 @@ class ApplicationService:
                        u.email  AS candidate_email,
                        jp.title AS job_title,
                        ara.matching_score
-                FROM aihr.applications a
-                JOIN aihr.candidate_profiles cp    ON cp.id  = a.candidate_id
-                JOIN aihr.users u                  ON u.id   = cp.user_id
-                JOIN aihr.job_postings jp           ON jp.id  = a.job_posting_id
-                LEFT JOIN aihr.ai_resume_analyses ara ON ara.application_id = a.id
+                FROM applications a
+                JOIN candidate_profiles cp    ON cp.id  = a.candidate_id
+                JOIN users u                  ON u.id   = cp.user_id
+                JOIN job_postings jp           ON jp.id  = a.job_posting_id
+                LEFT JOIN ai_resume_analyses ara ON ara.application_id = a.id
             """
             if job_posting_id:
                 rows = await conn.fetch(
@@ -108,11 +108,11 @@ class ApplicationService:
                 """
                 SELECT a.*, cp.first_name, cp.last_name, u.email AS candidate_email,
                        jp.title AS job_title, rp.company_name
-                FROM aihr.applications a
-                JOIN aihr.candidate_profiles cp ON cp.id = a.candidate_id
-                JOIN aihr.users u               ON u.id  = cp.user_id
-                JOIN aihr.job_postings jp       ON jp.id = a.job_posting_id
-                JOIN aihr.recruiter_profiles rp ON rp.id = jp.recruiter_id
+                FROM applications a
+                JOIN candidate_profiles cp ON cp.id = a.candidate_id
+                JOIN users u               ON u.id  = cp.user_id
+                JOIN job_postings jp       ON jp.id = a.job_posting_id
+                JOIN recruiter_profiles rp ON rp.id = jp.recruiter_id
                 WHERE a.id = $1::uuid
                 """,
                 application_id,
@@ -128,7 +128,7 @@ class ApplicationService:
             # Access control: candidate sees own, recruiter sees their job's
             if role == "candidate":
                 cp_id = await conn.fetchval(
-                    "SELECT id FROM aihr.candidate_profiles WHERE user_id = $1::uuid", user_id
+                    "SELECT id FROM candidate_profiles WHERE user_id = $1::uuid", user_id
                 )
                 if str(result["candidate_id"]) != str(cp_id):
                     raise EDSServiceException(
@@ -139,10 +139,10 @@ class ApplicationService:
                     )
             elif role == "recruiter":
                 rec_id = await conn.fetchval(
-                    "SELECT id FROM aihr.recruiter_profiles WHERE user_id = $1::uuid", user_id
+                    "SELECT id FROM recruiter_profiles WHERE user_id = $1::uuid", user_id
                 )
                 jp = await conn.fetchval(
-                    "SELECT recruiter_id FROM aihr.job_postings WHERE id = $1::uuid",
+                    "SELECT recruiter_id FROM job_postings WHERE id = $1::uuid",
                     result["job_posting_id"],
                 )
                 if str(jp) != str(rec_id):
@@ -162,8 +162,8 @@ class ApplicationService:
             app = await conn.fetchrow(
                 """
                 SELECT a.candidate_id, a.job_posting_id, a.status, a.cover_letter, a.applied_at
-                FROM aihr.applications a
-                JOIN aihr.job_postings jp ON jp.id = a.job_posting_id
+                FROM applications a
+                JOIN job_postings jp ON jp.id = a.job_posting_id
                 WHERE a.id = $1::uuid AND jp.recruiter_id = $2::uuid
                 """,
                 application_id, recruiter_id,
@@ -179,23 +179,23 @@ class ApplicationService:
             profile = await conn.fetchrow(
                 """
                 SELECT cp.*, u.email
-                FROM aihr.candidate_profiles cp
-                JOIN aihr.users u ON u.id = cp.user_id
+                FROM candidate_profiles cp
+                JOIN users u ON u.id = cp.user_id
                 WHERE cp.id = $1::uuid
                 """,
                 candidate_id,
             )
             skills = await conn.fetch(
-                "SELECT * FROM aihr.candidate_skills WHERE candidate_id = $1::uuid",
+                "SELECT * FROM candidate_skills WHERE candidate_id = $1::uuid",
                 candidate_id,
             )
             resumes = await conn.fetch(
-                "SELECT id, original_filename, file_url, is_primary, uploaded_at FROM aihr.resumes WHERE candidate_id = $1::uuid ORDER BY is_primary DESC, uploaded_at DESC",
+                "SELECT id, original_filename, file_url, is_primary, uploaded_at FROM resumes WHERE candidate_id = $1::uuid ORDER BY is_primary DESC, uploaded_at DESC",
                 candidate_id,
             )
             # AI анализ если уже был
             ai = await conn.fetchrow(
-                "SELECT * FROM aihr.ai_resume_analyses WHERE application_id = $1::uuid",
+                "SELECT * FROM ai_resume_analyses WHERE application_id = $1::uuid",
                 application_id,
             )
             return {
@@ -217,8 +217,8 @@ class ApplicationService:
                 """
                 SELECT a.id, a.candidate_id, a.resume_id, a.job_posting_id,
                        jp.description AS job_description, jp.title AS job_title
-                FROM aihr.applications a
-                JOIN aihr.job_postings jp ON jp.id = a.job_posting_id
+                FROM applications a
+                JOIN job_postings jp ON jp.id = a.job_posting_id
                 WHERE a.id = $1::uuid AND jp.recruiter_id = $2::uuid
                 """,
                 application_id, recruiter_id,
@@ -235,12 +235,12 @@ class ApplicationService:
             resume_row = None
             if row["resume_id"]:
                 resume_row = await conn.fetchrow(
-                    "SELECT file_url, original_filename FROM aihr.resumes WHERE id = $1::uuid",
+                    "SELECT file_url, original_filename FROM resumes WHERE id = $1::uuid",
                     row["resume_id"],
                 )
             if not resume_row:
                 resume_row = await conn.fetchrow(
-                    "SELECT file_url, original_filename FROM aihr.resumes WHERE candidate_id = $1::uuid AND is_primary = TRUE LIMIT 1",
+                    "SELECT file_url, original_filename FROM resumes WHERE candidate_id = $1::uuid AND is_primary = TRUE LIMIT 1",
                     row["candidate_id"],
                 )
             if not resume_row or not resume_row["file_url"]:
@@ -272,10 +272,10 @@ class ApplicationService:
             )
             result = results[0] if results else {}
 
-            # Сохраняем в aihr.ai_resume_analyses
+            # Сохраняем в ai_resume_analyses
             ai_row = await conn.fetchrow(
                 """
-                INSERT INTO aihr.ai_resume_analyses
+                INSERT INTO ai_resume_analyses
                     (application_id, resume_id, job_posting_id,
                      matching_score, skills_matched, skills_missing, summary, rank_position,
                      skill_overlap, semantic_score, experience_years, education,
@@ -319,9 +319,9 @@ class ApplicationService:
             recruiter_id = await self._recruiter_id(conn, user_id)
             row = await conn.fetchrow(
                 """
-                UPDATE aihr.applications a
-                SET status = $2::aihr.application_status, updated_at = NOW()
-                FROM aihr.job_postings jp
+                UPDATE applications a
+                SET status = $2::application_status, updated_at = NOW()
+                FROM job_postings jp
                 WHERE a.id = $1::uuid
                   AND a.job_posting_id = jp.id
                   AND jp.recruiter_id = $3::uuid

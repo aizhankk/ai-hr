@@ -6,7 +6,7 @@ class RecruiterService:
     async def get_by_user_id(self, user_id: str) -> dict:
         async with database.db_pool.acquire() as conn:
             row = await conn.fetchrow(
-                "SELECT * FROM aihr.recruiter_profiles WHERE user_id = $1::uuid",
+                "SELECT * FROM recruiter_profiles WHERE user_id = $1::uuid",
                 user_id,
             )
             if not row:
@@ -24,7 +24,7 @@ class RecruiterService:
             return await self.get_by_user_id(user_id)
         set_parts = [f"{k} = ${i + 2}" for i, k in enumerate(fields)]
         query = (
-            f"UPDATE aihr.recruiter_profiles "
+            f"UPDATE recruiter_profiles "
             f"SET {', '.join(set_parts)}, updated_at = NOW() "
             f"WHERE user_id = $1::uuid "
             f"RETURNING *"

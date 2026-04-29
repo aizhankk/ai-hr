@@ -32,7 +32,7 @@ class EmailCodeService:
             async with database.db_pool.acquire() as conn:
                 await conn.execute(
                     """
-                    INSERT INTO aihr.email_verifications (email, code, payload, expires_at)
+                    INSERT INTO email_verifications (email, code, payload, expires_at)
                     VALUES ($1, $2, $3, $4)
                     ON CONFLICT (email) DO UPDATE
                     SET code = EXCLUDED.code,
@@ -48,9 +48,9 @@ class EmailCodeService:
         except pg_exceptions.UndefinedTableError:
             raise EDSServiceException(
                 code="EMAIL_VERIFICATIONS_TABLE_NOT_FOUND",
-                message_ru="Таблица aihr.email_verifications не найдена",
-                message_kz="aihr.email_verifications кестесі табылмады",
-                message_en="Table aihr.email_verifications was not found",
+                message_ru="Таблица email_verifications не найдена",
+                message_kz="email_verifications кестесі табылмады",
+                message_en="Table email_verifications was not found",
             )
         await self.email_sender_service.send_code(email, code, "register", self.ttl_minutes)
 
@@ -69,7 +69,7 @@ class EmailCodeService:
             async with database.db_pool.acquire() as conn:
                 payload = await conn.fetchval(
                     """
-                    SELECT payload FROM aihr.email_verifications
+                    SELECT payload FROM email_verifications
                     WHERE email = $1
                     """,
                     email,
@@ -83,7 +83,7 @@ class EmailCodeService:
                     )
                 await conn.execute(
                     """
-                    UPDATE aihr.email_verifications
+                    UPDATE email_verifications
                     SET code = $2, expires_at = $3, created_at = NOW()
                     WHERE email = $1
                     """,
@@ -94,9 +94,9 @@ class EmailCodeService:
         except pg_exceptions.UndefinedTableError:
             raise EDSServiceException(
                 code="EMAIL_VERIFICATIONS_TABLE_NOT_FOUND",
-                message_ru="Таблица aihr.email_verifications не найдена",
-                message_kz="aihr.email_verifications кестесі табылмады",
-                message_en="Table aihr.email_verifications was not found",
+                message_ru="Таблица email_verifications не найдена",
+                message_kz="email_verifications кестесі табылмады",
+                message_en="Table email_verifications was not found",
             )
         await self.email_sender_service.send_code(email, code, "register", self.ttl_minutes)
 
@@ -114,7 +114,7 @@ class EmailCodeService:
                 row = await conn.fetchrow(
                     """
                     SELECT code, payload, expires_at
-                    FROM aihr.email_verifications
+                    FROM email_verifications
                     WHERE email = $1
                     LIMIT 1
                     """,
@@ -141,14 +141,14 @@ class EmailCodeService:
                         message_kz="Растау коды қате",
                         message_en="Invalid verification code",
                     )
-                await conn.execute("DELETE FROM aihr.email_verifications WHERE email = $1", email)
+                await conn.execute("DELETE FROM email_verifications WHERE email = $1", email)
                 return dict(row["payload"])
         except pg_exceptions.UndefinedTableError:
             raise EDSServiceException(
                 code="EMAIL_VERIFICATIONS_TABLE_NOT_FOUND",
-                message_ru="Таблица aihr.email_verifications не найдена",
-                message_kz="aihr.email_verifications кестесі табылмады",
-                message_en="Table aihr.email_verifications was not found",
+                message_ru="Таблица email_verifications не найдена",
+                message_kz="email_verifications кестесі табылмады",
+                message_en="Table email_verifications was not found",
             )
 
     async def request_code(self, email: str, purpose: str) -> None:
@@ -172,7 +172,7 @@ class EmailCodeService:
         async with database.db_pool.acquire() as conn:
             await conn.execute(
                 """
-                CREATE TABLE IF NOT EXISTS aihr.auth_email_codes (
+                CREATE TABLE IF NOT EXISTS auth_email_codes (
                     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                     email VARCHAR(255) NOT NULL,
                     purpose VARCHAR(64) NOT NULL,
@@ -185,7 +185,7 @@ class EmailCodeService:
             )
             await conn.execute(
                 """
-                INSERT INTO aihr.auth_email_codes (email, purpose, code, expires_at)
+                INSERT INTO auth_email_codes (email, purpose, code, expires_at)
                 VALUES ($1, $2, $3, $4)
                 """,
                 email,
@@ -207,7 +207,7 @@ class EmailCodeService:
             row = await conn.fetchrow(
                 """
                 SELECT id, code, expires_at
-                FROM aihr.auth_email_codes
+                FROM auth_email_codes
                 WHERE email = $1 AND purpose = $2 AND used_at IS NULL
                 ORDER BY created_at DESC
                 LIMIT 1
@@ -230,6 +230,6 @@ class EmailCodeService:
                     message_en="Invalid verification code",
                 )
             await conn.execute(
-                "UPDATE aihr.auth_email_codes SET used_at = NOW() WHERE id = $1",
+                "UPDATE auth_email_codes SET used_at = NOW() WHERE id = $1",
                 row["id"],
             )
