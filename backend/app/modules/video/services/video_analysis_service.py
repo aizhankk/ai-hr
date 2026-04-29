@@ -151,9 +151,12 @@ class VideoAnalysisService:
             with open(video_path, "wb") as f:
                 f.write(video_bytes)
 
+            import imageio_ffmpeg
+            ffmpeg_bin = imageio_ffmpeg.get_ffmpeg_exe()
+
             proc = subprocess.run(
                 [
-                    "ffmpeg", "-i", video_path,
+                    ffmpeg_bin, "-i", video_path,
                     "-vn",
                     "-acodec", "libmp3lame",
                     "-ar", "16000",
