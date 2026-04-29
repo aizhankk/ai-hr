@@ -240,6 +240,9 @@ CREATE TABLE video_analyses (
     speech_transcript TEXT,
     ai_summary TEXT,
     recommendations TEXT,
+    verdict VARCHAR(20),
+    strengths JSONB NOT NULL DEFAULT '[]',
+    concerns JSONB NOT NULL DEFAULT '[]',
     analyzed_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 

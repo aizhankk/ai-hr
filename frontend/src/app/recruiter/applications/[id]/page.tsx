@@ -36,6 +36,7 @@ export default function CandidateProfilePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [data, setData] = useState<Record<string, unknown> | null>(null);
+  const [loadError, setLoadError] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState("");
   const [videoState, setVideoState] = useState<{ file: File | null; uploading: boolean; uploaded: boolean; error: string }>({ file: null, uploading: false, uploaded: false, error: "" });
@@ -45,7 +46,9 @@ export default function CandidateProfilePage() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = () =>
-    api.getApplicationCandidate(id).then((r) => setData(r.data)).catch(() => {});
+    api.getApplicationCandidate(id)
+      .then((r) => setData(r.data))
+      .catch((err: unknown) => setLoadError(err instanceof Error ? err.message : "Failed to load"));
 
   useEffect(() => {
     load();
@@ -95,6 +98,13 @@ export default function CandidateProfilePage() {
       setAnalyzingVideo(false);
     }
   };
+
+  if (loadError) return (
+    <div className="flex flex-col items-center justify-center py-24 gap-3">
+      <p className="text-red-500 font-medium">{loadError}</p>
+      <button onClick={() => { setLoadError(""); load(); }} className="text-sm text-indigo-600 hover:underline">Retry</button>
+    </div>
+  );
 
   if (!data) return (
     <div className="flex justify-center py-24">
@@ -387,45 +397,96 @@ export default function CandidateProfilePage() {
               ) : videoAnalysis ? (
                 /* Analysis results */
                 <div className="flex flex-col gap-4">
-                  <div className="flex justify-around">
+
+                  {/* Verdict */}
+                  {videoAnalysis.verdict ? (() => {
+                    const v = videoAnalysis.verdict as string;
+                    const style =
+                      v === "Good Fit" ? "bg-green-50 text-green-700 border-green-200" :
+                      v === "Not a Fit" ? "bg-red-50 text-red-600 border-red-200" :
+                      "bg-yellow-50 text-yellow-700 border-yellow-200";
+                    return (
+                      <div className={`text-center py-2 rounded-xl border font-semibold text-sm ${style}`}>
+                        {v}
+                      </div>
+                    );
+                  })() : null}
+
+                  {/* Score rings */}
+                  <div className="grid grid-cols-2 gap-3">
                     <ScoreRing value={videoAnalysis.overall_score as number} label="Overall" />
                     <ScoreRing value={videoAnalysis.speech_clarity_score as number} label="Clarity" />
                     <ScoreRing value={videoAnalysis.confidence_score as number} label="Confidence" />
+                    <ScoreRing value={videoAnalysis.emotional_tone_score as number} label="Tone" />
                   </div>
-                  <ScoreRing value={videoAnalysis.emotional_tone_score as number} label="Tone" />
 
-                  {videoAnalysis.speech_transcript ? (
-                    <div className="bg-slate-50 rounded-xl p-3">
-                      <p className="text-[10px] font-semibold text-slate-400 uppercase mb-1.5 flex items-center gap-1">
-                        <Mic size={10} /> Transcript
-                      </p>
-                      <p className="text-xs text-slate-600 leading-relaxed line-clamp-4">
-                        {videoAnalysis.speech_transcript as string}
-                      </p>
-                    </div>
-                  ) : null}
-
+                  {/* Summary */}
                   {videoAnalysis.ai_summary ? (
                     <div className="bg-indigo-50 rounded-xl p-3">
                       <p className="text-[10px] font-semibold text-indigo-400 uppercase mb-1 flex items-center gap-1">
                         <MessageSquare size={10} /> AI Summary
                       </p>
-                      <p className="text-xs text-indigo-900">{videoAnalysis.ai_summary as string}</p>
+                      <p className="text-xs text-indigo-900 leading-relaxed">{videoAnalysis.ai_summary as string}</p>
                     </div>
                   ) : null}
 
-                  {videoAnalysis.recommendations ? (
-                    <div className="bg-amber-50 rounded-xl p-3">
-                      <p className="text-[10px] font-semibold text-amber-500 uppercase mb-1 flex items-center gap-1">
-                        <Lightbulb size={10} /> Рекомендации
+                  {/* Strengths */}
+                  {Array.isArray(videoAnalysis.strengths) && (videoAnalysis.strengths as string[]).length > 0 ? (
+                    <div className="bg-green-50 rounded-xl p-3">
+                      <p className="text-[10px] font-semibold text-green-600 uppercase mb-2 flex items-center gap-1">
+                        <CheckCircle size={10} /> Strengths
                       </p>
-                      <p className="text-xs text-amber-900">{videoAnalysis.recommendations as string}</p>
+                      <ul className="flex flex-col gap-1">
+                        {(videoAnalysis.strengths as string[]).map((s, i) => (
+                          <li key={i} className="text-xs text-green-800 flex items-start gap-1.5">
+                            <CheckCircle size={10} className="text-green-500 mt-0.5 shrink-0" />{s}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+
+                  {/* Concerns */}
+                  {Array.isArray(videoAnalysis.concerns) && (videoAnalysis.concerns as string[]).length > 0 ? (
+                    <div className="bg-amber-50 rounded-xl p-3">
+                      <p className="text-[10px] font-semibold text-amber-600 uppercase mb-2 flex items-center gap-1">
+                        <AlertCircle size={10} /> Concerns
+                      </p>
+                      <ul className="flex flex-col gap-1">
+                        {(videoAnalysis.concerns as string[]).map((c, i) => (
+                          <li key={i} className="text-xs text-amber-800 flex items-start gap-1.5">
+                            <AlertCircle size={10} className="text-amber-500 mt-0.5 shrink-0" />{c}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+
+                  {/* Recommendations */}
+                  {videoAnalysis.recommendations ? (
+                    <div className="bg-slate-50 rounded-xl p-3">
+                      <p className="text-[10px] font-semibold text-slate-400 uppercase mb-1 flex items-center gap-1">
+                        <Lightbulb size={10} /> Recommendation
+                      </p>
+                      <p className="text-xs text-slate-700">{videoAnalysis.recommendations as string}</p>
+                    </div>
+                  ) : null}
+
+                  {/* Transcript */}
+                  {videoAnalysis.speech_transcript ? (
+                    <div className="bg-slate-50 rounded-xl p-3">
+                      <p className="text-[10px] font-semibold text-slate-400 uppercase mb-1.5 flex items-center gap-1">
+                        <Mic size={10} /> Transcript
+                      </p>
+                      <p className="text-xs text-slate-600 leading-relaxed line-clamp-6">
+                        {videoAnalysis.speech_transcript as string}
+                      </p>
                     </div>
                   ) : null}
 
                   <button onClick={runVideoAnalysis} disabled={analyzingVideo}
                     className="w-full text-xs text-violet-600 hover:underline disabled:opacity-50">
-                    {analyzingVideo ? "Анализирую…" : "Перезапустить анализ"}
+                    {analyzingVideo ? "Analyzing…" : "Re-run analysis"}
                   </button>
                 </div>
               ) : (
