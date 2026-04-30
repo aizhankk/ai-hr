@@ -58,6 +58,21 @@ class ApplicationService:
             asyncio.create_task(self._analyze_resume_background(str(result["id"])))
         return result
 
+    async def withdraw(self, application_id: str, user_id: str) -> None:
+        async with database.db_pool.acquire() as conn:
+            candidate_id = await self._candidate_id(conn, user_id)
+            result = await conn.execute(
+                "DELETE FROM applications WHERE id = $1::uuid AND candidate_id = $2::uuid",
+                application_id, candidate_id,
+            )
+            if result.endswith("0"):
+                raise EDSServiceException(
+                    code="APPLICATION_NOT_FOUND",
+                    message_ru="Заявка не найдена или нет доступа",
+                    message_kz="Өтініш табылмады немесе рұқсат жоқ",
+                    message_en="Application not found or access denied",
+                )
+
     async def _analyze_resume_background(self, application_id: str) -> None:
         """Silently runs CV AI screening after a candidate applies. Never raises."""
         from app.ai.cv_ml import rank_resumes_against_job

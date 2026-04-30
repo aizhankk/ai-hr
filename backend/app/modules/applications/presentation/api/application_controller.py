@@ -88,6 +88,20 @@ async def get_application(
     return _ok(_serial(app))
 
 
+@application_router.delete("/{application_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def withdraw_application(
+    application_id: str,
+    request: Request,
+    _: HTTPAuthorizationCredentials = Security(bearer_scheme),
+):
+    if getattr(request.state, "user_role", None) != "candidate":
+        raise HTTPException(status_code=403, detail="Candidates only")
+    try:
+        await application_service.withdraw(application_id, request.state.user_id)
+    except EDSServiceException as exc:
+        raise HTTPException(status_code=404, detail=exc.message_en)
+
+
 @application_router.patch("/{application_id}/status")
 async def update_status(
     application_id: str,

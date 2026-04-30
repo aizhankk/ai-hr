@@ -22,8 +22,10 @@ export default function RegisterCandidatePage() {
     setError("");
     setLoading(true);
     try {
-      await api.registerCandidate(form);
-      router.push(`/verify-email?email=${encodeURIComponent(form.email)}`);
+      const res = await api.registerCandidate(form) as { data: { access_token: string; refresh_token: string; user: { role: string } } };
+      localStorage.setItem("access_token", res.data.access_token);
+      localStorage.setItem("refresh_token", res.data.refresh_token);
+      router.push("/candidate/dashboard");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
@@ -49,7 +51,7 @@ export default function RegisterCandidatePage() {
               <Input label="Last name" value={form.last_name} onChange={set("last_name")} required />
             </div>
             <Input label="Email" type="email" value={form.email} onChange={set("email")} required />
-            <Input label="Password" type="password" value={form.password} onChange={set("password")} required minLength={6} />
+            <Input label="Password (min 4 characters)" type="password" value={form.password} onChange={set("password")} required minLength={4} />
             <Button type="submit" loading={loading} size="lg" className="w-full">Create account</Button>
           </form>
         </div>

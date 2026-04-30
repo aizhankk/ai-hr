@@ -166,6 +166,8 @@ export const api = {
     ),
   getApplication: (id: string) =>
     request<{ status: string; data: Record<string, unknown> }>(`/applications/${id}`),
+  withdrawApplication: (id: string) =>
+    request(`/applications/${id}`, { method: "DELETE" }),
   updateApplicationStatus: (id: string, status: string) =>
     request(`/applications/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
   getApplicationCandidate: (applicationId: string) =>

@@ -45,10 +45,13 @@ def _raise_registration_error(exc: EDSServiceException) -> None:
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
 
 
-@auth_router.post("/register/candidate")
+@auth_router.post("/register/candidate", status_code=status.HTTP_201_CREATED)
 async def register_candidate(payload: RegisterCandidateRequest):
+    import re
+    if len(payload.password) < 4:
+        raise HTTPException(status_code=400, detail="Password must be at least 4 characters")
     try:
-        await auth_service.register_candidate(
+        token_pair, user = await auth_service.register_candidate(
             email=payload.email,
             password=payload.password,
             first_name=payload.first_name,
@@ -56,13 +59,25 @@ async def register_candidate(payload: RegisterCandidateRequest):
         )
     except EDSServiceException as exc:
         _raise_registration_error(exc)
-    return {"message": "Code sent to email"}
+    return {
+        "status": "success",
+        "data": {
+            "access_token": token_pair.access_token,
+            "refresh_token": token_pair.refresh_token,
+            "token_type": "bearer",
+            "refresh_expires_at": token_pair.refresh_expires_at.isoformat(),
+            "user": {"id": str(user["id"]), "email": user["email"], "role": str(user["role"])},
+        },
+    }
 
 
-@auth_router.post("/register/recruiter")
+@auth_router.post("/register/recruiter", status_code=status.HTTP_201_CREATED)
 async def register_recruiter(payload: RegisterRecruiterRequest):
+    import re
+    if len(payload.password) < 4:
+        raise HTTPException(status_code=400, detail="Password must be at least 4 characters")
     try:
-        await auth_service.register_recruiter(
+        token_pair, user = await auth_service.register_recruiter(
             email=payload.email,
             password=payload.password,
             first_name=payload.first_name,
@@ -72,7 +87,16 @@ async def register_recruiter(payload: RegisterRecruiterRequest):
         )
     except EDSServiceException as exc:
         _raise_registration_error(exc)
-    return {"message": "Code sent to email"}
+    return {
+        "status": "success",
+        "data": {
+            "access_token": token_pair.access_token,
+            "refresh_token": token_pair.refresh_token,
+            "token_type": "bearer",
+            "refresh_expires_at": token_pair.refresh_expires_at.isoformat(),
+            "user": {"id": str(user["id"]), "email": user["email"], "role": str(user["role"])},
+        },
+    }
 
 
 @auth_router.post("/verify-email", status_code=status.HTTP_201_CREATED)

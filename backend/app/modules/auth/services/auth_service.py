@@ -14,18 +14,17 @@ class AuthService:
 
     async def register_candidate(
         self, *, email: str, password: str, first_name: str, last_name: str
-    ) -> None:
-        await self.user_service.ensure_email_available(email)
-        password_hash = self.user_service.password_service.hash_password(password)
-        await self.email_code_service.create_pending_registration(
-            email=email,
-            payload={
-                "role": "candidate",
-                "password_hash": password_hash,
-                "first_name": first_name,
-                "last_name": last_name,
-            },
+    ):
+        await self.user_service.register_user(
+            email=email, password=password, role="candidate",
+            first_name=first_name, last_name=last_name,
         )
+        user = await self.user_service.get_active_user_by_email(email)
+        token_pair = self.token_service.create_pair(
+            user_id=str(user["id"]), email=user["email"], role=str(user["role"]),
+        )
+        await self.session_service.create_session(user["id"], token_pair)
+        return token_pair, user
 
     async def register_recruiter(
         self,
@@ -36,20 +35,18 @@ class AuthService:
         last_name: str,
         company_name: str,
         position: str,
-    ) -> None:
-        await self.user_service.ensure_email_available(email)
-        password_hash = self.user_service.password_service.hash_password(password)
-        await self.email_code_service.create_pending_registration(
-            email=email,
-            payload={
-                "role": "recruiter",
-                "password_hash": password_hash,
-                "first_name": first_name,
-                "last_name": last_name,
-                "company_name": company_name,
-                "position": position,
-            },
+    ):
+        await self.user_service.register_user(
+            email=email, password=password, role="recruiter",
+            first_name=first_name, last_name=last_name,
+            company_name=company_name, position=position,
         )
+        user = await self.user_service.get_active_user_by_email(email)
+        token_pair = self.token_service.create_pair(
+            user_id=str(user["id"]), email=user["email"], role=str(user["role"]),
+        )
+        await self.session_service.create_session(user["id"], token_pair)
+        return token_pair, user
 
     async def verify_email(self, email: str, code: str):
         payload = await self.email_code_service.verify_registration_code(email, code)

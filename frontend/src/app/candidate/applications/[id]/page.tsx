@@ -4,7 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { Video, Calendar, Clock, Brain, CheckCircle, AlertCircle, Lightbulb, Mic, MessageSquare } from "lucide-react";
+import { Video, Calendar, Clock, Brain, CheckCircle, AlertCircle, Lightbulb, Mic, MessageSquare, Trash2 } from "lucide-react";
 
 function ScoreRing({ value, label }: { value: number; label: string }) {
   const pct = Math.min(100, Math.max(0, value));
@@ -33,11 +33,23 @@ export default function ApplicationDetailPage() {
   const router = useRouter();
   const [app, setApp] = useState<Record<string, unknown> | null>(null);
   const [video, setVideo] = useState<Record<string, unknown> | null>(null);
+  const [withdrawing, setWithdrawing] = useState(false);
 
   useEffect(() => {
     api.getApplication(id).then((r) => setApp(r.data)).catch(() => {});
     api.getVideo(id).then((r) => setVideo(r.data)).catch(() => {});
   }, [id]);
+
+  const withdraw = async () => {
+    if (!confirm("Withdraw this application? This cannot be undone.")) return;
+    setWithdrawing(true);
+    try {
+      await api.withdrawApplication(id);
+      router.push("/candidate/applications");
+    } catch {
+      setWithdrawing(false);
+    }
+  };
 
   if (!app) return (
     <div className="flex justify-center py-20">
@@ -50,7 +62,16 @@ export default function ApplicationDetailPage() {
 
   return (
     <div className="max-w-2xl flex flex-col gap-5">
-      <button onClick={() => router.back()} className="text-sm text-indigo-600 hover:underline self-start">← Back</button>
+      <div className="flex items-center justify-between">
+        <button onClick={() => router.back()} className="text-sm text-indigo-600 hover:underline">← Back</button>
+        <button
+          onClick={withdraw}
+          disabled={withdrawing}
+          className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 disabled:opacity-50 border border-red-200 rounded-lg px-3 py-1.5 hover:bg-red-50 transition-colors"
+        >
+          <Trash2 size={13} /> {withdrawing ? "Withdrawing…" : "Withdraw application"}
+        </button>
+      </div>
 
       {/* Application info */}
       <Card>
