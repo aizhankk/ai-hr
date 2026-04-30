@@ -234,7 +234,7 @@ export default function CandidateProfilePage() {
                               attached
                             </span>
                           )}
-                          {r.is_primary && r.id !== app.resume_id && (
+                          {Boolean(r.is_primary) && r.id !== app.resume_id && (
                             <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full shrink-0">
                               primary
                             </span>
