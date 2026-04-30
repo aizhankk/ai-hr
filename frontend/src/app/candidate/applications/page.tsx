@@ -84,15 +84,15 @@ export default function CandidateApplicationsPage() {
                     )}
                   </div>
 
-                  <div className="flex items-center gap-3 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0">
                     <Badge label={a.status as string} />
                     <button
                       onClick={(e) => withdraw(e, a.id as string)}
                       disabled={isDeleting}
-                      className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                      title="Withdraw application"
+                      className="flex items-center gap-1 text-xs text-red-500 border border-red-200 rounded-lg px-2.5 py-1.5 hover:bg-red-50 transition-colors disabled:opacity-50 shrink-0"
                     >
-                      <Trash2 size={15} />
+                      <Trash2 size={12} />
+                      {isDeleting ? "…" : "Withdraw"}
                     </button>
                     <ChevronRight size={16} className="text-slate-400" />
                   </div>
