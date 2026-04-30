@@ -5,15 +5,27 @@ import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { ClipboardList, ChevronRight, FileText } from "lucide-react";
+import { ClipboardList, ChevronRight, FileText, Trash2 } from "lucide-react";
 
 export default function CandidateApplicationsPage() {
   const [apps, setApps] = useState<Record<string, unknown>[]>([]);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const router = useRouter();
 
-  useEffect(() => {
-    api.listApplications().then((r) => setApps(r.data)).catch(() => {});
-  }, []);
+  const load = () => api.listApplications().then((r) => setApps(r.data)).catch(() => {});
+  useEffect(() => { load(); }, []);
+
+  const withdraw = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!confirm("Withdraw this application? This cannot be undone.")) return;
+    setDeleting(id);
+    try {
+      await api.withdrawApplication(id);
+      setApps((prev) => prev.filter((a) => a.id !== id));
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   return (
     <div>
@@ -32,6 +44,7 @@ export default function CandidateApplicationsPage() {
         <div className="flex flex-col gap-3">
           {apps.map((a) => {
             const resumeUrl = a.resume_file_url as string | null;
+            const isDeleting = deleting === (a.id as string);
 
             return (
               <Card
@@ -73,6 +86,14 @@ export default function CandidateApplicationsPage() {
 
                   <div className="flex items-center gap-3 shrink-0">
                     <Badge label={a.status as string} />
+                    <button
+                      onClick={(e) => withdraw(e, a.id as string)}
+                      disabled={isDeleting}
+                      className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                      title="Withdraw application"
+                    >
+                      <Trash2 size={15} />
+                    </button>
                     <ChevronRight size={16} className="text-slate-400" />
                   </div>
                 </CardBody>
