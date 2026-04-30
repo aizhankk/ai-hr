@@ -7,37 +7,38 @@ import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Alert } from "@/components/ui/Alert";
 import {
-  MapPin, DollarSign, Building2, CheckCircle, Sparkles, Send,
+  MapPin, DollarSign, Building2, CheckCircle, /* Sparkles, */ Send,
 } from "lucide-react";
 
-type MatchPreview = {
-  matching_score: number;
-  skill_overlap: number;
-  semantic_score: number;
-  experience_years: number;
-  education: string;
-  skills_matched: string[];
-  summary: string;
-  resume_id: string;
-  resume_filename: string;
-};
+// AI match feature commented out
+// type MatchPreview = {
+//   matching_score: number;
+//   skill_overlap: number;
+//   semantic_score: number;
+//   experience_years: number;
+//   education: string;
+//   skills_matched: string[];
+//   summary: string;
+//   resume_id: string;
+//   resume_filename: string;
+// };
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
-function ScoreBar({ value, label }: { value: number; label: string }) {
-  const pct = Math.min(100, Math.max(0, Math.round(value)));
-  return (
-    <div>
-      <div className="flex items-center justify-between text-xs mb-1">
-        <span className="text-slate-500">{label}</span>
-        <span className="text-slate-700 font-medium">{pct}%</span>
-      </div>
-      <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-        <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${pct}%` }} />
-      </div>
-    </div>
-  );
-}
+// function ScoreBar({ value, label }: { value: number; label: string }) {
+//   const pct = Math.min(100, Math.max(0, Math.round(value)));
+//   return (
+//     <div>
+//       <div className="flex items-center justify-between text-xs mb-1">
+//         <span className="text-slate-500">{label}</span>
+//         <span className="text-slate-700 font-medium">{pct}%</span>
+//       </div>
+//       <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+//         <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${pct}%` }} />
+//       </div>
+//     </div>
+//   );
+// }
 
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -50,9 +51,10 @@ export default function JobDetailPage() {
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const [match, setMatch] = useState<MatchPreview | null>(null);
-  const [matchLoading, setMatchLoading] = useState(false);
-  const [matchError, setMatchError] = useState("");
+  // AI match feature commented out
+  // const [match, setMatch] = useState<MatchPreview | null>(null);
+  // const [matchLoading, setMatchLoading] = useState(false);
+  // const [matchError, setMatchError] = useState("");
 
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -92,18 +94,19 @@ export default function JobDetailPage() {
     }
   };
 
-  const checkMatch = async () => {
-    setMatchError("");
-    setMatchLoading(true);
-    try {
-      const res = await api.aiMatchPreview(id, selectedResume || undefined);
-      setMatch(res.data);
-    } catch (err: unknown) {
-      setMatchError(err instanceof Error ? err.message : "Failed to analyze");
-    } finally {
-      setMatchLoading(false);
-    }
-  };
+  // AI match feature commented out
+  // const checkMatch = async () => {
+  //   setMatchError("");
+  //   setMatchLoading(true);
+  //   try {
+  //     const res = await api.aiMatchPreview(id, selectedResume || undefined);
+  //     setMatch(res.data);
+  //   } catch (err: unknown) {
+  //     setMatchError(err instanceof Error ? err.message : "Failed to analyze");
+  //   } finally {
+  //     setMatchLoading(false);
+  //   }
+  // };
 
   const sendChat = async () => {
     const text = chatInput.trim();
@@ -126,7 +129,7 @@ export default function JobDetailPage() {
   if (!job) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>;
 
   const skills = (job.skills as Record<string, unknown>[]) ?? [];
-  const overall = match ? Math.round(match.matching_score) : 0;
+  // const overall = match ? Math.round(match.matching_score) : 0;
 
   return (
     <div className="max-w-6xl">
@@ -209,7 +212,7 @@ export default function JobDetailPage() {
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-slate-400 mt-1">Used for the AI match analysis on the right too.</p>
+                  {/* <p className="text-xs text-slate-400 mt-1">Used for the AI match analysis on the right too.</p> */}
                 </div>
                 <div>
                   <label className="text-sm font-medium text-slate-700 block mb-1">Cover letter (optional)</label>
@@ -228,8 +231,8 @@ export default function JobDetailPage() {
 
         {/* RIGHT: AI sidebar */}
         <div className="flex flex-col gap-4">
-          {/* Match preview */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5">
+          {/* AI match feature commented out */}
+          {/* <div className="bg-white rounded-xl border border-slate-200 p-5">
             <h3 className="text-sm font-semibold text-slate-800 mb-3">AI match</h3>
 
             {matchError && <div className="mb-3"><Alert message={matchError} /></div>}
@@ -291,19 +294,19 @@ export default function JobDetailPage() {
                 </Button>
               </div>
             )}
-          </div>
+          </div> */}
 
           {/* AI chat */}
           <div className="bg-white rounded-xl border border-slate-200 flex flex-col">
             <div className="px-5 py-3 border-b border-slate-100">
-              <h3 className="text-sm font-semibold text-slate-800">Ask AI</h3>
-              <p className="text-xs text-slate-400">Questions about the role or your CV</p>
+              <h3 className="text-sm font-semibold text-slate-800">Rewrite my CV</h3>
+              <p className="text-xs text-slate-400">Line-by-line suggestions tailored to this job</p>
             </div>
 
             <div ref={chatScrollRef} className="h-72 overflow-y-auto px-4 py-3 flex flex-col gap-2.5">
               {chatMessages.length === 0 ? (
                 <p className="text-xs text-slate-400 text-center py-8">
-                  Try: <span className="italic">&quot;What skills am I missing?&quot;</span>
+                  Try: <span className="italic">&quot;Which lines in my CV should I rewrite?&quot;</span>
                 </p>
               ) : null}
               {chatMessages.map((m, i) => (
