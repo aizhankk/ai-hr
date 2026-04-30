@@ -12,9 +12,3 @@ from app.modules.auth.presentation.schemas.requests.register_candidate_request i
 from app.modules.auth.presentation.schemas.requests.register_recruiter_request import (
     RegisterRecruiterRequest,
 )
-from app.modules.auth.presentation.schemas.requests.resend_code_request import (
-    ResendCodeRequest,
-)
-from app.modules.auth.presentation.schemas.requests.verify_email_request import (
-    VerifyEmailRequest,
-)

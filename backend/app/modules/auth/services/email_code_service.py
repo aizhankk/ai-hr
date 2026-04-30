@@ -54,52 +54,6 @@ class EmailCodeService:
             )
         await self.email_sender_service.send_code(email, code, "register", self.ttl_minutes)
 
-    async def resend_registration_code(self, email: str) -> None:
-        if database.db_pool is None:
-            raise EDSServiceException(
-                code="DB_UNAVAILABLE",
-                message_ru="База данных недоступна",
-                message_kz="Дерекқор қолжетімсіз",
-                message_en="Database unavailable",
-            )
-
-        code = self._build_code()
-        expires_at = datetime.utcnow() + timedelta(minutes=self.ttl_minutes)
-        try:
-            async with database.db_pool.acquire() as conn:
-                payload = await conn.fetchval(
-                    """
-                    SELECT payload FROM email_verifications
-                    WHERE email = $1
-                    """,
-                    email,
-                )
-                if not payload:
-                    raise EDSServiceException(
-                        code="PENDING_NOT_FOUND",
-                        message_ru="Заявка на регистрацию не найдена",
-                        message_kz="Тіркелу сұранысы табылмады",
-                        message_en="Pending registration not found",
-                    )
-                await conn.execute(
-                    """
-                    UPDATE email_verifications
-                    SET code = $2, expires_at = $3, created_at = NOW()
-                    WHERE email = $1
-                    """,
-                    email,
-                    code,
-                    expires_at,
-                )
-        except pg_exceptions.UndefinedTableError:
-            raise EDSServiceException(
-                code="EMAIL_VERIFICATIONS_TABLE_NOT_FOUND",
-                message_ru="Таблица email_verifications не найдена",
-                message_kz="email_verifications кестесі табылмады",
-                message_en="Table email_verifications was not found",
-            )
-        await self.email_sender_service.send_code(email, code, "register", self.ttl_minutes)
-
     async def verify_registration_code(self, email: str, code: str) -> dict:
         if database.db_pool is None:
             raise EDSServiceException(

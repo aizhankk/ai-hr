@@ -9,8 +9,6 @@ from app.modules.auth.presentation.schemas.requests import (
     RefreshRequest,
     RegisterCandidateRequest,
     RegisterRecruiterRequest,
-    ResendCodeRequest,
-    VerifyEmailRequest,
 )
 from pydantic import BaseModel
 
@@ -97,33 +95,6 @@ async def register_recruiter(payload: RegisterRecruiterRequest):
             "user": {"id": str(user["id"]), "email": user["email"], "role": str(user["role"])},
         },
     }
-
-
-@auth_router.post("/verify-email", status_code=status.HTTP_201_CREATED)
-async def verify_email(payload: VerifyEmailRequest):
-    try:
-        token_pair, user = await auth_service.verify_email(payload.email, payload.code)
-    except EDSServiceException as exc:
-        _raise_registration_error(exc)
-    return {
-        "access_token": token_pair.access_token,
-        "refresh_token": token_pair.refresh_token,
-        "token_type": "bearer",
-        "user": {
-            "id": str(user["id"]),
-            "email": user["email"],
-            "role": str(user["role"]),
-        },
-    }
-
-
-@auth_router.post("/resend-code")
-async def resend_code(payload: ResendCodeRequest):
-    try:
-        await auth_service.resend_code(payload.email)
-    except EDSServiceException as exc:
-        _raise_registration_error(exc)
-    return {"message": "Code sent to email"}
 
 
 @auth_router.post("/login")

@@ -75,15 +75,6 @@ export const api = {
   registerRecruiter: (data: Record<string, string>) =>
     request("/auth/register/recruiter", { method: "POST", body: JSON.stringify(data) }),
 
-  verifyEmail: (email: string, code: string) =>
-    request<{ access_token: string; refresh_token: string; token_type: string; user: { id: string; email: string; role: string } }>(
-      "/auth/verify-email",
-      { method: "POST", body: JSON.stringify({ email, code }) }
-    ),
-
-  resendCode: (email: string) =>
-    request("/auth/resend-code", { method: "POST", body: JSON.stringify({ email }) }),
-
   login: (email: string, password: string) =>
     request<{ status: string; data: { access_token: string; refresh_token: string; refresh_expires_at: string } }>(
       "/auth/login",

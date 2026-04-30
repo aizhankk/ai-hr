@@ -48,21 +48,6 @@ class AuthService:
         await self.session_service.create_session(user["id"], token_pair)
         return token_pair, user
 
-    async def verify_email(self, email: str, code: str):
-        payload = await self.email_code_service.verify_registration_code(email, code)
-        await self.user_service.create_verified_user_from_payload(email, payload)
-        user = await self.user_service.get_active_user_by_email(email)
-        token_pair = self.token_service.create_pair(
-            user_id=str(user["id"]),
-            email=user["email"],
-            role=str(user["role"]),
-        )
-        await self.session_service.create_session(user["id"], token_pair)
-        return token_pair, user
-
-    async def resend_code(self, email: str) -> None:
-        await self.email_code_service.resend_registration_code(email)
-
     async def login(self, email: str, password: str):
         user = await self.user_service.authenticate(email, password)
         token_pair = self.token_service.create_pair(

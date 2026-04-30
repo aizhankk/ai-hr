@@ -27,63 +27,6 @@ class UserService:
                     message_en="User with this email already exists",
                 )
 
-    async def create_verified_user_from_payload(self, email: str, payload: dict) -> None:
-        if database.db_pool is None:
-            raise EDSServiceException(
-                code="DB_UNAVAILABLE",
-                message_ru="База данных недоступна",
-                message_kz="Дерекқор қолжетімсіз",
-                message_en="Database unavailable",
-            )
-        role = payload.get("role")
-        if role not in {"candidate", "recruiter"}:
-            raise EDSServiceException(
-                code="ROLE_INVALID",
-                message_ru="Недопустимая роль",
-                message_kz="Рөл жарамсыз",
-                message_en="Invalid role",
-            )
-        async with database.db_pool.acquire() as conn:
-            async with conn.transaction():
-                exists = await conn.fetchval("SELECT 1 FROM users WHERE email = $1", email)
-                if exists:
-                    raise EDSServiceException(
-                        code="EMAIL_ALREADY_EXISTS",
-                        message_ru="Пользователь с таким email уже существует",
-                        message_kz="Осындай email бар пайдаланушы бұрыннан бар",
-                        message_en="User with this email already exists",
-                    )
-                user_id = await conn.fetchval(
-                    """
-                    INSERT INTO users (email, password_hash, role, email_verified)
-                    VALUES ($1, $2, $3::user_role, TRUE)
-                    RETURNING id
-                    """,
-                    email,
-                    payload["password_hash"],
-                    role,
-                )
-                if role == "candidate":
-                    await conn.execute(
-                        """
-                        INSERT INTO candidate_profiles (user_id, first_name, last_name)
-                        VALUES ($1, $2, $3)
-                        """,
-                        user_id,
-                        payload.get("first_name") or "Unknown",
-                        payload.get("last_name") or "Unknown",
-                    )
-                else:
-                    await conn.execute(
-                        """
-                        INSERT INTO recruiter_profiles (user_id, company_name, position)
-                        VALUES ($1, $2, $3)
-                        """,
-                        user_id,
-                        payload.get("company_name") or "Company",
-                        payload.get("position"),
-                    )
-
     async def get_active_user_by_email(self, email: str):
         if database.db_pool is None:
             raise EDSServiceException(

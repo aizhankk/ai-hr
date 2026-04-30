@@ -13,8 +13,6 @@ EXCLUDE_PATHS = {"/", "/docs", "/openapi.json", "/redoc", "/health"}
 PUBLIC_PREFIXES = (
     "/api/auth/register/candidate",
     "/api/auth/register/recruiter",
-    "/api/auth/verify-email",
-    "/api/auth/resend-code",
     "/api/auth/login",
     "/api/auth/refresh",
     "/api/auth/forgot-password/request-code",
