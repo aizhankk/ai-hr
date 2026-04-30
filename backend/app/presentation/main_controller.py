@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from app.modules.ai_assist.presentation.api.ai_assist_controller import ai_assist_router
 from app.modules.applications.presentation.api.application_controller import application_router
 from app.modules.auth.presentation.api.auth_controller import auth_router
 from app.modules.candidates.presentation.api.candidate_controller import candidate_router
@@ -19,3 +20,4 @@ main_router.include_router(job_router)
 main_router.include_router(application_router)
 main_router.include_router(video_router)
 main_router.include_router(notification_router)
+main_router.include_router(ai_assist_router)

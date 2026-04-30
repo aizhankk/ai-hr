@@ -177,6 +177,23 @@ export const api = {
   analyzeVideo: (applicationId: string) =>
     request<{ status: string; data: Record<string, unknown> }>(`/video/${applicationId}/analyze`, { method: "POST" }),
 
+  // AI Assist (candidate-side)
+  aiMatchPreview: (job_posting_id: string, resume_id?: string) =>
+    request<{ status: string; data: { matching_score: number; skill_overlap: number; semantic_score: number; experience_years: number; education: string; skills_matched: string[]; summary: string; resume_id: string; resume_filename: string } }>(
+      "/ai-assist/match-preview",
+      { method: "POST", body: JSON.stringify({ job_posting_id, resume_id }) }
+    ),
+
+  aiChat: (
+    messages: { role: "user" | "assistant"; content: string }[],
+    job_posting_id?: string,
+    resume_id?: string,
+  ) =>
+    request<{ status: string; data: { reply: string } }>(
+      "/ai-assist/chat",
+      { method: "POST", body: JSON.stringify({ messages, job_posting_id, resume_id }) }
+    ),
+
   // Notifications
   listNotifications: () =>
     request<{ status: string; data: Record<string, unknown>[] }>("/notifications"),
