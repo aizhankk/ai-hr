@@ -52,10 +52,10 @@ export default function MatchPage() {
     <div>
       <div className="flex items-center gap-2 mb-1">
         <Sparkles size={22} className="text-indigo-600" />
-        <h1 className="text-2xl font-bold text-slate-900">AI-подбор вакансий</h1>
+        <h1 className="text-2xl font-bold text-slate-900">AI Job Match</h1>
       </div>
       <p className="text-sm text-slate-500 mb-6">
-        Выберите резюме — система найдёт вакансии, подходящие <strong>по смыслу</strong>, а не только по ключевым словам.
+        Pick a resume — the system finds jobs that match <strong>by meaning</strong>, not just by keywords.
       </p>
 
       {/* Step 1: pick resume */}
@@ -63,9 +63,9 @@ export default function MatchPage() {
         <Card>
           <CardBody className="text-center py-12 text-slate-400">
             <FileText size={40} className="mx-auto mb-3 opacity-40" />
-            <p className="mb-3">У вас пока нет загруженных резюме.</p>
+            <p className="mb-3">You don&apos;t have any uploaded resumes yet.</p>
             <Link href="/candidate/resumes">
-              <Button size="sm">Загрузить резюме</Button>
+              <Button size="sm">Upload resume</Button>
             </Link>
           </CardBody>
         </Card>
@@ -89,7 +89,7 @@ export default function MatchPage() {
                   <span className="flex-1 truncate text-sm text-slate-800">{(r.original_filename as string) || "resume"}</span>
                   {r.is_primary ? (
                     <span className="flex items-center gap-1 text-[11px] font-medium text-amber-600">
-                      <Star size={11} /> основное
+                      <Star size={11} /> primary
                     </span>
                   ) : null}
                 </button>
@@ -98,7 +98,7 @@ export default function MatchPage() {
           </div>
 
           <Button onClick={runMatch} loading={loading} disabled={!selected} className="mb-6">
-            <Sparkles size={16} /> Подобрать вакансии
+            <Sparkles size={16} /> Find matching jobs
           </Button>
         </>
       )}
@@ -106,7 +106,7 @@ export default function MatchPage() {
       {error ? <div className="mb-6"><Alert type="error" message={error} /></div> : null}
 
       {loading ? (
-        <p className="text-sm text-slate-400">Анализируем резюме и сравниваем с вакансиями…</p>
+        <p className="text-sm text-slate-400">Analyzing your resume and comparing it with jobs…</p>
       ) : null}
 
       {/* Step 2: results */}
@@ -115,12 +115,12 @@ export default function MatchPage() {
           <Card>
             <CardBody className="text-center py-12 text-slate-400">
               <Briefcase size={40} className="mx-auto mb-3 opacity-40" />
-              <p>Подходящих вакансий не нашлось.</p>
+              <p>No matching jobs found.</p>
             </CardBody>
           </Card>
         ) : (
           <div className="flex flex-col gap-3">
-            <p className="text-sm font-medium text-slate-500">Найдено вакансий: {jobs.length}</p>
+            <p className="text-sm font-medium text-slate-500">Jobs found: {jobs.length}</p>
             {jobs.map((j) => {
               const score = Number(j.match_score ?? 0);
               return (

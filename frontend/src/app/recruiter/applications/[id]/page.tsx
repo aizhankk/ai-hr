@@ -53,7 +53,7 @@ export default function CandidateProfilePage() {
 
   useEffect(() => {
     load();
-    // Проверяем есть ли уже видео и анализ
+    // Check whether a video and analysis already exist
     api.getVideo(id)
       .then((r) => {
         const v = r.data;
@@ -360,7 +360,7 @@ export default function CandidateProfilePage() {
                 <span className="font-semibold text-sm">Video Interview AI</span>
               </div>
               <p className="text-violet-200 text-xs mt-0.5">
-                Whisper → транскрипция → AI → анализ речи
+                Whisper → transcription → AI → speech analysis
               </p>
             </div>
 
@@ -368,7 +368,7 @@ export default function CandidateProfilePage() {
               {/* Upload block */}
               {!videoState.uploaded ? (
                 <div className="flex flex-col gap-3">
-                  <p className="text-xs text-slate-500">Загрузите запись интервью (Zoom, Meet)</p>
+                  <p className="text-xs text-slate-500">Upload the interview recording (Zoom, Meet)</p>
                   <div
                     className="border-2 border-dashed border-slate-200 rounded-xl p-5 text-center cursor-pointer hover:border-violet-400 transition-colors"
                     onClick={() => fileRef.current?.click()}
@@ -377,7 +377,7 @@ export default function CandidateProfilePage() {
                   >
                     <Upload size={22} className="mx-auto mb-1.5 text-slate-300" />
                     <p className="text-xs text-slate-400">
-                      {videoState.file ? videoState.file.name : "Перетащите или нажмите"}
+                      {videoState.file ? videoState.file.name : "Drag & drop or click"}
                     </p>
                     <p className="text-[10px] text-slate-300 mt-0.5">mp4, webm, mov</p>
                     <input ref={fileRef} type="file" accept="video/*" className="hidden"
@@ -386,7 +386,7 @@ export default function CandidateProfilePage() {
                   {videoState.file ? (
                     <div className="flex items-center gap-2">
                       <Button size="sm" className="flex-1" onClick={uploadVideo} loading={videoState.uploading}>
-                        <Upload size={13} /> Загрузить видео
+                        <Upload size={13} /> Upload video
                       </Button>
                       <button onClick={() => setVideoState((s) => ({ ...s, file: null }))} className="text-slate-400 hover:text-red-400">
                         <X size={16} />
@@ -486,7 +486,7 @@ export default function CandidateProfilePage() {
                         onClick={() => setShowFullTranscript((v) => !v)}
                         className="mt-1.5 text-[11px] font-medium text-violet-600 hover:underline"
                       >
-                        {showFullTranscript ? "Свернуть" : "Показать полностью"}
+                        {showFullTranscript ? "Collapse" : "Show full transcript"}
                       </button>
                     </div>
                   ) : null}
@@ -500,7 +500,7 @@ export default function CandidateProfilePage() {
                 /* Video uploaded but no analysis yet */
                 <div className="text-center py-4">
                   <div className="flex items-center gap-2 justify-center text-green-600 text-xs mb-4">
-                    <CheckCircle size={14} /> Видео загружено
+                    <CheckCircle size={14} /> Video uploaded
                   </div>
                   {videoAnalysisError ? (
                     <div className="flex items-start gap-2 bg-red-50 rounded-xl px-3 py-2 mb-3 text-left">
@@ -509,10 +509,10 @@ export default function CandidateProfilePage() {
                     </div>
                   ) : null}
                   <p className="text-xs text-slate-400 mb-3">
-                    Whisper распознает речь → AI оценит уверенность, чёткость и соответствие вакансии
+                    Whisper transcribes the speech → AI scores confidence, clarity and job fit
                   </p>
                   <Button onClick={runVideoAnalysis} loading={analyzingVideo} size="sm" className="w-full bg-violet-600 hover:bg-violet-700">
-                    <Brain size={14} /> Запустить AI анализ
+                    <Brain size={14} /> Run AI analysis
                   </Button>
                 </div>
               )}

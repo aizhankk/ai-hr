@@ -69,17 +69,17 @@ export default function MarketPage() {
           <TrendingUp size={22} className="text-indigo-600" /> Market Monitor
         </h1>
         <p className="text-slate-500 text-sm mt-1">
-          Анализ рынка вакансий — следи за трендами, зарплатами и конкурентами
+          Job market analysis — track trends, salaries and competitors
         </p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4 mb-6">
-        <StatCard label="Вакансий на рынке" value={jobs.length} icon={Briefcase} color="bg-indigo-50 text-indigo-600" />
-        <StatCard label="Компаний" value={companies} icon={Building2} color="bg-purple-50 text-purple-600" />
-        <StatCard label="Удалённых позиций" value={remoteCount} icon={TrendingUp} color="bg-green-50 text-green-600" />
+        <StatCard label="Jobs on market" value={jobs.length} icon={Briefcase} color="bg-indigo-50 text-indigo-600" />
+        <StatCard label="Companies" value={companies} icon={Building2} color="bg-purple-50 text-purple-600" />
+        <StatCard label="Remote positions" value={remoteCount} icon={TrendingUp} color="bg-green-50 text-green-600" />
         <StatCard
-          label="Средн. мин. зарплата"
+          label="Avg. min salary"
           value={avgSalaryMin > 0 ? `${Math.round(avgSalaryMin).toLocaleString()}` : "—"}
           icon={DollarSign}
           color="bg-amber-50 text-amber-600"
@@ -90,7 +90,7 @@ export default function MarketPage() {
       {Object.keys(typeCount).length > 0 && (
         <div className="bg-white rounded-2xl border border-slate-200 p-5 mb-6">
           <p className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-            <BarChart2 size={15} className="text-slate-400" /> Распределение по типу занятости
+            <BarChart2 size={15} className="text-slate-400" /> Breakdown by employment type
           </p>
           <div className="flex flex-wrap gap-2">
             {Object.entries(typeCount).sort((a, b) => b[1] - a[1]).map(([t, count]) => (
@@ -117,7 +117,7 @@ export default function MarketPage() {
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             className="w-full pl-9 pr-4 py-2 text-sm border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
-            placeholder="Поиск по названию, компании или описанию…"
+            placeholder="Search by title, company or description…"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
           />
@@ -126,7 +126,7 @@ export default function MarketPage() {
           <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             className="pl-8 pr-4 py-2 text-sm border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 w-44"
-            placeholder="Город…"
+            placeholder="City…"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
           />
@@ -137,7 +137,7 @@ export default function MarketPage() {
           onChange={(e) => setType(e.target.value)}
         >
           {EMPLOYMENT_TYPES.map((t) => (
-            <option key={t} value={t}>{t ? t.replace(/_/g, " ") : "Все типы"}</option>
+            <option key={t} value={t}>{t ? t.replace(/_/g, " ") : "All types"}</option>
           ))}
         </select>
         {(search || type || location) && (
@@ -145,11 +145,11 @@ export default function MarketPage() {
             onClick={() => { setInputValue(""); setSearch(""); setType(""); setLocation(""); }}
             className="text-xs text-slate-400 hover:text-red-500 transition-colors"
           >
-            Сбросить
+            Reset
           </button>
         )}
         <span className="text-xs text-slate-400 ml-auto">
-          {loading ? "Загрузка…" : `${jobs.length} вакансий`}
+          {loading ? "Loading…" : `${jobs.length} jobs`}
         </span>
       </div>
 
@@ -157,7 +157,7 @@ export default function MarketPage() {
       {jobs.length === 0 && !loading ? (
         <div className="bg-white rounded-2xl border border-slate-200 p-16 text-center text-slate-400">
           <Briefcase size={40} className="mx-auto mb-3 opacity-30" />
-          <p>Вакансий не найдено.</p>
+          <p>No jobs found.</p>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
