@@ -271,18 +271,25 @@ class ApplicationService:
                 "SELECT * FROM candidate_skills WHERE candidate_id = $1::uuid", candidate_id
             )
             if app["resume_id"]:
+                # Показываем рекрутеру только резюме, прикреплённое к этому отклику
                 resumes = await conn.fetch(
                     """
                     SELECT id, original_filename, file_path, file_url, is_primary, uploaded_at
                     FROM resumes
-                    WHERE candidate_id = $1::uuid OR id = $2::uuid
-                    ORDER BY is_primary DESC, uploaded_at DESC
+                    WHERE id = $1::uuid
                     """,
-                    candidate_id, app["resume_id"],
+                    app["resume_id"],
                 )
             else:
+                # Старые отклики без прикреплённого резюме — показываем только основное
                 resumes = await conn.fetch(
-                    "SELECT id, original_filename, file_path, file_url, is_primary, uploaded_at FROM resumes WHERE candidate_id = $1::uuid ORDER BY is_primary DESC, uploaded_at DESC",
+                    """
+                    SELECT id, original_filename, file_path, file_url, is_primary, uploaded_at
+                    FROM resumes
+                    WHERE candidate_id = $1::uuid AND is_primary = TRUE
+                    ORDER BY uploaded_at DESC
+                    LIMIT 1
+                    """,
                     candidate_id,
                 )
             ai = await conn.fetchrow(

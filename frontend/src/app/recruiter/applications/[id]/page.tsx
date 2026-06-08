@@ -43,6 +43,7 @@ export default function CandidateProfilePage() {
   const [videoAnalysis, setVideoAnalysis] = useState<Record<string, unknown> | null>(null);
   const [analyzingVideo, setAnalyzingVideo] = useState(false);
   const [videoAnalysisError, setVideoAnalysisError] = useState("");
+  const [showFullTranscript, setShowFullTranscript] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = () =>
@@ -478,9 +479,15 @@ export default function CandidateProfilePage() {
                       <p className="text-[10px] font-semibold text-slate-400 uppercase mb-1.5 flex items-center gap-1">
                         <Mic size={10} /> Transcript
                       </p>
-                      <p className="text-xs text-slate-600 leading-relaxed line-clamp-6">
+                      <p className={`text-xs text-slate-600 leading-relaxed whitespace-pre-wrap ${showFullTranscript ? "" : "line-clamp-6"}`}>
                         {videoAnalysis.speech_transcript as string}
                       </p>
+                      <button
+                        onClick={() => setShowFullTranscript((v) => !v)}
+                        className="mt-1.5 text-[11px] font-medium text-violet-600 hover:underline"
+                      >
+                        {showFullTranscript ? "Свернуть" : "Показать полностью"}
+                      </button>
                     </div>
                   ) : null}
 
