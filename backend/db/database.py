@@ -85,7 +85,9 @@ async def init_db_pool():
             server_settings={
                 "timezone": "Asia/Almaty",
                 "application_name": "my-alatau",
-                "search_path": "public",
+                # extensions: на Supabase pgvector ставится в схему extensions —
+                # без неё в search_path тип vector не находится.
+                "search_path": "public, extensions",
             },
             init=_set_json_codecs,
         )

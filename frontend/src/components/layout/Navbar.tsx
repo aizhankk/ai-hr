@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import {
   Bell, Briefcase, LogOut, Settings, User,
-  LayoutDashboard, Search, ClipboardList, FileText, TrendingUp
+  LayoutDashboard, Search, ClipboardList, FileText, TrendingUp, Sparkles
 } from "lucide-react";
 
 export function Navbar() {
@@ -24,6 +24,7 @@ export function Navbar() {
     : [
         { href: "/candidate/dashboard",    label: "Home",         icon: LayoutDashboard },
         { href: "/candidate/jobs",         label: "Jobs",         icon: Search },
+        { href: "/candidate/match",        label: "AI Match",     icon: Sparkles },
         { href: "/candidate/applications", label: "Applications", icon: ClipboardList },
         { href: "/candidate/resumes",      label: "Resumes",      icon: FileText },
         { href: "/candidate/profile",      label: "Profile",      icon: User },

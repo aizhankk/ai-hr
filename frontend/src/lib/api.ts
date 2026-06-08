@@ -148,6 +148,13 @@ export const api = {
   setPrimaryResume: (id: string) => request(`/resumes/${id}/primary`, { method: "PATCH" }),
   deleteResume: (id: string) => request(`/resumes/${id}`, { method: "DELETE" }),
 
+  // Semantic job matching (resume → suitable jobs via embeddings)
+  matchJobs: (resume_id?: string, limit = 10) =>
+    request<{ status: string; data: { resume_id: string; resume_filename: string; count: number; jobs: Record<string, unknown>[] } }>(
+      "/matching/jobs",
+      { method: "POST", body: JSON.stringify({ resume_id, limit }) }
+    ),
+
   // Applications
   apply: (data: Record<string, unknown>) =>
     request("/applications", { method: "POST", body: JSON.stringify(data) }),
